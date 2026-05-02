@@ -170,7 +170,7 @@ jobs:
               with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                   f.write("has_tasks=true\n")
 
-          action_list = ["install"] * num_installs + ["click"] * num_clicks
+          action_list = ["install"] * num_installs +["click"] * num_clicks
           random.shuffle(action_list)
 
           print(f"[Action Matrix] Total Tasks Queued: {tasks_total}")
@@ -253,7 +253,7 @@ jobs:
           short_os_tag = short_os(os_version)
           short_sw_tag = "MANUAL" if manual_url else short_software(software_choice)
 
-          includes = []
+          includes =[]
           for i in range(tasks_total):
               action_mode = action_list[i]
               absolute_idx = i + 1
@@ -439,8 +439,8 @@ jobs:
               return {'working': False, **pinfo}
 
           # Parse inputs into lists
-          manual_proxies = []
-          scrapeops_keys =[]
+          manual_proxies =[]
+          scrapeops_keys = []
           floppy_keys =[]
           
           if proxy_input and not without_proxy:
@@ -1043,38 +1043,38 @@ jobs:
               # English
               "keep", "keep anyway", "keep file", "run anyway",
               "keep download", "download anyway", "allow",
-              # French (France + Canada + Switzerland + Belgium)
+              # French
               "conserver", "conserver quand même", "garder", "garder quand même",
               "conserver le fichier", "télécharger quand même",
               "continuer quand même", "autoriser",
-              # Portuguese / Brazilian (Brazil)
+              # Portuguese
               "manter", "manter assim mesmo", "manter arquivo",
               "baixar assim mesmo", "continuar assim mesmo",
               "permitir", "manter de qualquer forma",
-              # German (Germany + Switzerland + Austria)
+              # German
               "beibehalten", "trotzdem beibehalten", "datei beibehalten",
               "trotzdem herunterladen", "trotzdem ausführen",
               "zulassen", "behalten", "trotzdem behalten",
-              # Spanish (Mexico + Spain)
+              # Spanish
               "conservar", "conservar de todas formas", "conservar igualmente",
               "mantener", "mantener de todas formas", "descargar igualmente",
               "ejecutar igualmente", "permitir",
-              # Italian (Italy + Switzerland)
+              # Italian
               "mantieni", "mantieni comunque", "mantieni il file",
               "scarica comunque", "esegui comunque", "consenti",
               "tieni", "tieni comunque",
-              # Dutch (Netherlands + Belgium)
+              # Dutch
               "bewaren", "toch bewaren", "bestand bewaren",
               "toch downloaden", "toch uitvoeren",
               "toestaan", "behouden", "toch behouden",
-              # Polish (Poland)
+              # Polish
               "zachowaj", "zachowaj mimo to", "zachowaj plik",
               "pobierz mimo to", "uruchom mimo to",
               "zezwól", "zatrzymaj", "zatrzymaj mimo to",
-              # Vietnamese (Vietnam)
+              # Vietnamese
               "giữ lại", "vẫn giữ", "giữ tệp",
               "vẫn tải xuống", "vẫn chạy", "cho phép",
-              # Indonesian (Indonesia)
+              # Indonesian
               "simpan", "tetap simpan", "simpan file",
               "tetap unduh", "tetap jalankan", "izinkan",
           ]
@@ -1083,7 +1083,6 @@ jobs:
           # MULTILINGUAL OPERA ONE POST-INSTALL BUTTON KEYWORDS
           # ══════════════════════════════════════════════════════════════════════
 
-          # "Next" button in all supported languages
           OPERA_NEXT_KEYWORDS =[
               # English
               "next", "next step", "continue", "proceed",
@@ -1109,7 +1108,6 @@ jobs:
               "selanjutnya", "lanjut", "berikutnya",
           ]
 
-          # "Done" / "Finish" button in all supported languages
           OPERA_DONE_KEYWORDS =[
               # English
               "done", "finish", "complete", "close", "finalize",
@@ -1140,7 +1138,6 @@ jobs:
               "selesai", "tutup", "akhiri",
           ]
 
-          # "Submit" button in all supported languages
           OPERA_SUBMIT_KEYWORDS =[
               # English
               "submit", "send", "confirm", "apply", "save",
@@ -1197,11 +1194,6 @@ jobs:
               "dane logowania", "poświadczenia", "poswiadczenia",
               "đăng nhập", "xác thực", "kết nối", "thông tin xác thực",
               "masuk", "autentikasi", "sambungkan", "kredensial",
-              "войти", "аутентификация", "подключиться", "учётные данные",
-              "giriş", "kimlik doğrulama", "bağlan", "kimlik bilgileri",
-              "登录", "身份验证", "连接", "凭据",
-              "サインイン", "認証", "接続", "資格情報",
-              "로그인", "인증", "연결", "자격 증명",
           ]
 
           USERNAME_FIELD_KEYWORDS =[
@@ -1217,8 +1209,6 @@ jobs:
               "nazwa użytkownika", "nazwa uzytkownika", "użytkownik", "uzytkownik",
               "tên người dùng", "tài khoản",
               "nama pengguna", "pengguna",
-              "имя пользователя", "логин",
-              "kullanıcı adı", "kullanici adi",
           ]
 
           PASSWORD_FIELD_KEYWORDS =[
@@ -1232,8 +1222,6 @@ jobs:
               "hasło", "haslo",
               "mật khẩu",
               "kata sandi",
-              "пароль",
-              "şifre", "sifre", "parola",
           ]
 
           SUBMIT_BUTTON_KEYWORDS =[
@@ -1248,8 +1236,6 @@ jobs:
               "zaloguj", "połącz", "polacz", "kontynuuj", "potwierdź", "potwierdz",
               "đăng nhập", "tiếp tục", "xác nhận",
               "masuk", "lanjutkan", "konfirmasi",
-              "войти", "подключиться", "продолжить",
-              "giriş yap", "bağlan", "devam", "onayla",
           ]
 
           ADDRESS_BAR_NAMES =[
@@ -1421,7 +1407,7 @@ jobs:
               tl = text.lower()
               if software_type == "avg":
                   return "avg" in tl
-              elif software_type in["opera_gx"]:
+              elif software_type in ["opera_gx"]:
                   return ("opera" in tl and "gx" in tl) or "opera gx" in tl
               elif software_type in["opera_one", "opera_smart_link", "dynamic_opera", "ad_mvn"]:
                   return "opera" in tl and "edge" not in tl and "chrome web store" not in tl
@@ -1696,7 +1682,7 @@ jobs:
                       if not _is_interference_window(wt):
                           continue
 
-                      log_msg("WinGuard", f"Interference window detected: '{wt}'[{label}]")
+                      log_msg("WinGuard", f"Interference window detected: '{wt}' [{label}]")
                       closed = False
 
                       try:
@@ -1995,7 +1981,7 @@ jobs:
                           ctrl_type = el.element_info.control_type
                       except Exception:
                           continue
-                      if ctrl_type not in["Button", "Hyperlink", "Text", "Custom"]:
+                      if ctrl_type not in ["Button", "Hyperlink", "Text", "Custom"]:
                           continue
                       try:
                           txt = (el.window_text() or "").strip()
@@ -2027,16 +2013,6 @@ jobs:
 
               return False
 
-          def click_opera_button(desktop, opera_window, software_type, button_names, label=""):
-              sw, sh = pyautogui.size()
-              fallback = (sw // 2, int(sh * 0.80))
-              return click_opera_button_multilingual(
-                  desktop, opera_window, software_type,
-                  keyword_list=button_names,
-                  label=label,
-                  fallback_coords=fallback
-              )
-
           # ══════════════════════════════════════════════════════════════════════
           # MULTILINGUAL PROXY AUTH INJECTION
           # ══════════════════════════════════════════════════════════════════════
@@ -2052,8 +2028,8 @@ jobs:
                       u_struct, p_struct = _is_auth_dialog_by_structure(window)
                       if u_struct and p_struct:
                           log_msg("ProxyAuth", f"[{label}] Using structural detection (2-field dialog).")
-                          user_fields =[u_struct]
-                          pass_fields = [p_struct]
+                          user_fields = [u_struct]
+                          pass_fields =[p_struct]
 
                   if user_fields and pass_fields:
                       if _is_address_bar_control(user_fields[0]) or _is_address_bar_control(pass_fields[0]):
@@ -2312,8 +2288,8 @@ jobs:
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 12 COMPLETE.")
 
-              log_msg("PostInstall-OP1", "STEP 13: Starting TAB cycle sequence (8 TABs → 18 TABs)...")
-              tab_sequence = list(range(8, 19))
+              log_msg("PostInstall-OP1", "STEP 13: Starting TAB cycle sequence (10 TABs → 20 TABs)...")
+              tab_sequence = list(range(10, 21))
               log_msg("PostInstall-OP1", f"  TAB sequence plan: {tab_sequence}")
 
               for cycle_idx, tab_count in enumerate(tab_sequence):
@@ -2513,23 +2489,26 @@ jobs:
 
               log_msg("PostInstall-AVG", "=== AVG Post-Install Sequence Completed Successfully ===")
 
-          def handle_automation(username, password, software_type, use_proxy, action_mode, timeout=360):
+          def handle_automation(software_type, action_mode, timeout=360):
               desktop = Desktop(backend="uia")
               start_time = time.time()
               proxy_auth_time = start_time
 
-              log_msg("UI-Engine", f"Started monitoring. Action Mode: {action_mode.upper()} | Type: {software_type}")
+              log_msg("UI-Engine", f"Started monitoring. Action Mode: {action_mode.upper()} | "
+                      f"Type: {software_type} | ProxyType: {PROXY_TYPE} | UseProxy: {USE_PROXY}")
+              log_msg("UI-Engine", f"Proxy credentials ready: User={PROXY_USER[:25]}... | "
+                      f"Server={PROXY_SERVER}")
 
-              last_ctrl_j_time = time.time()
-              last_dl_click_time = 0
-              ctrl_j_attempts = 0
-              keep_clicked = False
+              opera_download_clicked = False
               avg_download_clicked = False
+              keep_sequence_pending = False
+              keep_backup_pending = False
+              keep_backup_time = 0
+              last_dl_click_time = 0
 
               smart_link_interstitial_done = False
               smart_link_interstitial_time = 0
 
-              # Opera One post-install uses 25s threshold (halved)
               opera_one_installer_executed_time = None
               opera_one_post_install_done = False
 
@@ -2637,7 +2616,6 @@ jobs:
                           download_windows_closed = True
                           edge_window = None
 
-                      # ── Opera One post-install (25s from installer sentinel) ──
                       if action_mode == "install" and not opera_one_post_install_done:
                           is_one = (software_type == "opera_one")
                           is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
@@ -2654,7 +2632,6 @@ jobs:
                                       opera_one_post_install_sequence(opera_window, software_type=software_type)
                                       opera_one_post_install_done = True
 
-                      # ── Opera GX post-install (40s from installer sentinel) ──
                       if action_mode == "install" and not opera_gx_post_install_done:
                           is_gx = (software_type == "opera_gx")
                           is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
@@ -2671,7 +2648,6 @@ jobs:
                                       opera_gx_post_install_sequence(opera_window)
                                       opera_gx_post_install_done = True
 
-                      # ── AVG post-install (60s from installer sentinel) ──
                       if software_type == "avg" and action_mode == "install" and not avg_post_install_done:
                           if avg_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
                               avg_installer_executed_time = time.time()
@@ -2681,43 +2657,25 @@ jobs:
                               avg_post_install_sequence(avg_window)
                               avg_post_install_done = True
 
-                      # A. Proxy Authentication dialog
-                      if use_proxy and (edge_window or opera_window or avg_window):
-                          for w in [edge_window, opera_window, avg_window]:
-                              if w:
-                                  user_fields = w.descendants(control_type="Edit", title="Username")
-                                  pass_fields = w.descendants(control_type="Edit", title="Password")
-                                  if user_fields and pass_fields:
-                                      try:
-                                          log_msg("Proxy", "Authentication dialog detected.")
-                                          w.set_focus()
-                                          time.sleep(0.5)
-                                          user_fields[0].click_input()
-                                          user_fields[0].type_keys(username, with_spaces=True, pause=0.02)
-                                          pass_fields[0].click_input()
-                                          pass_fields[0].type_keys(password, with_spaces=True, pause=0.02)
-                                          btn = w.descendants(control_type="Button", title="Sign in")
-                                          if btn:
-                                              btn[0].click_input()
-                                          else:
-                                              pass_fields[0].type_keys("{ENTER}")
-                                          proxy_auth_time = time.time()
-                                          log_msg("Proxy", "Credentials injected.")
-                                      except Exception as e:
-                                          log_msg("Proxy", f"Auth injection failed: {e}")
-
-                      # Cookie Handling
+                      # ── MULTILINGUAL COOKIE CONSENT ────────────────────────────
                       if edge_window:
-                          for cookie_btn in["Accept all", "Accepter tout", "Tout accepter", "Accept Cookies", "Allow all", "Accept selection"]:
-                              btns = edge_window.descendants(control_type="Button", title=cookie_btn)
-                              if btns:
+                          try:
+                              for btn in edge_window.descendants(control_type="Button"):
                                   try:
-                                      log_msg("Cookies", f"Found consent button: '{cookie_btn}'. Clicking...")
-                                      btns[0].click_input()
-                                      time.sleep(1)
-                                  except: pass
+                                      btn_txt = (btn.window_text() or "").strip()
+                                  except Exception:
+                                      btn_txt = ""
+                                  if btn_txt and _matches_any(btn_txt, COOKIE_CONSENT_KEYWORDS):
+                                      try:
+                                          log_msg("Cookies", f"Found consent button: '{btn_txt}'. Clicking...")
+                                          btn.click_input()
+                                          time.sleep(1)
+                                          break
+                                      except Exception:
+                                          pass
+                          except Exception:
+                              pass
 
-                      # Smart Link Interstitial
                       if edge_window and software_type == "opera_smart_link":
                           elapsed = time.time() - proxy_auth_time
                           if not smart_link_interstitial_done:
@@ -2735,7 +2693,6 @@ jobs:
                                   smart_link_interstitial_done = True
                                   smart_link_interstitial_time = time.time()
 
-                      # Skip logic for Click-Only mode
                       if action_mode == "click":
                           if software_type == "opera_smart_link":
                               if not smart_link_interstitial_done:
@@ -2747,83 +2704,99 @@ jobs:
                           time.sleep(1)
                           continue
 
-                      # Edge Download Protection
-                      if edge_window and action_mode == "install":
-                          keep_btns = edge_window.descendants(control_type="Button", title="Keep")
-                          if keep_btns:
-                              log_msg("EdgeProtect", "Detected 'Keep' warning. Clicking...")
-                              keep_clicked = True
-                              keep_btns[0].click_input()
-                              time.sleep(0.5)
-                          keep_anyway = edge_window.descendants(control_type="Button", title="Keep anyway")
-                          if keep_anyway:
-                              log_msg("EdgeProtect", "Detected 'Keep anyway' warning. Clicking...")
-                              keep_clicked = True
-                              keep_anyway[0].click_input()
-                              time.sleep(0.5)
-
-                      # Interstitial & Final Download Auto-Clicker
                       can_click_download = True
                       if software_type == "opera_smart_link":
                           if not smart_link_interstitial_done or (time.time() - smart_link_interstitial_time < 15):
                               can_click_download = False
 
-                      if edge_window and action_mode == "install" and can_click_download and software_type in["opera_gx", "opera_one", "ad_mvn", "dynamic_opera", "opera_smart_link"]:
-                          if time.time() - last_dl_click_time > 5:
-                              clicked_something = False
-                              dl_keywords =["download opera", "download now", "télécharger", "baixar", "herunterladen", "descargar", "download"]
-                              for btn in edge_window.descendants(control_type="Button"):
-                                  btntxt = btn.window_text()
-                                  if btntxt and any(k in btntxt.lower() for k in dl_keywords):
-                                      try:
-                                          log_msg("Download", f"Targeting Final Download Button: '{btntxt}'...")
-                                          edge_window.set_focus()
-                                          time.sleep(0.5)
-                                          btn.click_input()
-                                          last_dl_click_time = time.time()
-                                          clicked_something = True
-                                          log_msg("Download", "Button clicked successfully.")
-                                          break
-                                      except Exception as e:
-                                          log_msg("Download", f"Failed to click button: {e}")
-                              if not clicked_something:
-                                  for el in edge_window.descendants():
-                                      if el.element_info.control_type in["Hyperlink", "Text", "Image"]:
-                                          wt = el.window_text()
-                                          if wt and "opera" in wt.lower() and len(wt) < 150:
-                                              if "smart link" not in wt.lower() and "http" not in wt.lower() and "playabledownloads" not in wt.lower():
-                                                  try:
-                                                      log_msg("Download", f"Targeting Interstitial Link: '{wt}'...")
-                                                      edge_window.set_focus()
-                                                      el.click_input()
-                                                      last_dl_click_time = time.time()
-                                                      log_msg("Download", "Link clicked successfully.")
-                                                      break
-                                                  except Exception as e:
-                                                      log_msg("Download", f"Failed to click link: {e}")
+                      # ── MULTILINGUAL DOWNLOAD BUTTON CLICK ─────────────────────
+                      if (edge_window and action_mode == "install" and can_click_download
+                              and software_type in["opera_gx", "opera_one", "ad_mvn",
+                                                    "dynamic_opera", "opera_smart_link"]):
+                          if not opera_download_clicked:
+                              if now - last_dl_multilingual_time > DL_MULTILINGUAL_COOLDOWN:
+                                  log_msg("DL-Engine", f"Opera download scan triggered (type={software_type})...")
+                                  clicked = click_download_button_multilingual(
+                                      edge_window, software_type, label=f"opera-dl-{software_type}"
+                                  )
+                                  if clicked:
+                                      last_dl_multilingual_time = now
+                                      last_dl_click_time = now
+                                      opera_download_clicked = True
+                                      keep_sequence_pending = True
+                                      log_msg("DL-Engine", "Opera download button clicked successfully (multilingual).")
+                                  else:
+                                      log_msg("DL-Engine", "Opera download button not found this cycle. Will retry.")
 
-                      # AVG Download Trigger
                       if edge_window and action_mode == "install" and software_type == "avg":
                           elapsed = time.time() - proxy_auth_time
                           if not avg_download_clicked and elapsed > 20:
-                              log_msg("AVG", f"{elapsed:.1f}s elapsed. Initiating AVG TAB+ENTER download trigger.")
+                              log_msg("AVG", f"{elapsed:.1f}s elapsed. Initiating multilingual AVG download click.")
+                              clicked = click_download_button_multilingual(
+                                  edge_window, software_type, label="avg-dl-multilingual"
+                              )
+                              if clicked:
+                                  log_msg("AVG", "Multilingual AVG download button clicked successfully.")
+                              else:
+                                  log_msg("AVG", "Multilingual button not found — falling back to TAB+ENTER keyboard method.")
+                                  try:
+                                      edge_window.set_focus()
+                                      time.sleep(0.5)
+                                      send_keys('{TAB}')
+                                      delay = random.uniform(1.0, 2.0)
+                                      time.sleep(delay)
+                                      send_keys('{ENTER}')
+                                      log_msg("AVG", "TAB+ENTER fallback sent.")
+                                  except Exception as e:
+                                      log_msg("AVG", f"Keyboard sequence error: {e}")
+                              avg_download_clicked = True
+                              last_dl_click_time = time.time()
+                              keep_sequence_pending = True
+
+                      # ── STATE MACHINE: KEEP SEQUENCE ───────────────────────────
+                      if keep_sequence_pending and (now - last_dl_click_time >= 15):
+                          keep_sequence_pending = False
+                          log_msg("KeepSeq", "15 seconds elapsed since download click. Executing robust Ctrl+J -> Tab x4 -> Enter sequence.")
+                          try:
+                              edge_window.set_focus()
+                              time.sleep(0.5)
+                              log_msg("KeepSeq", "Sending Ctrl+J...")
+                              send_keys('^j')
+                              time.sleep(1)
+                              for t_idx in range(1, 5):
+                                  log_msg("KeepSeq", f"Sending TAB {t_idx}/4...")
+                                  send_keys('{TAB}')
+                                  time.sleep(1)
+                              log_msg("KeepSeq", "Sending ENTER...")
+                              send_keys('{ENTER}')
+                              log_msg("KeepSeq", "Keep keyboard sequence complete.")
+                          except Exception as e:
+                              log_msg("KeepSeq", f"Error in Keep keyboard sequence: {e}")
+                          
+                          keep_backup_pending = True
+                          keep_backup_time = time.time()
+
+                      if keep_backup_pending and (now - keep_backup_time >= 5):
+                          keep_backup_pending = False
+                          if not os.path.exists(sentinel_path):
+                              log_msg("KeepSeq", "Software not downloaded yet. Executing backup UI automation click for Keep...")
                               try:
                                   edge_window.set_focus()
                                   time.sleep(0.5)
-                                  send_keys('{TAB}')
-                                  delay = random.uniform(1.0, 2.0)
-                                  time.sleep(delay)
-                                  send_keys('{ENTER}')
-                                  log_msg("AVG", "TAB+ENTER sent. Waiting 10s...")
-                                  for w in range(1, 11):
-                                      log_msg("AVG", f"Download init wait: {w}/10 seconds...")
-                                      time.sleep(1)
-                                  log_msg("AVG", "10s init wait complete.")
+                                  click_keep_button_multilingual(edge_window, label="keep-backup")
+                                  
+                                  # Absolute coordinate backup for keep in Edge flyout
+                                  sw_now, sh_now = pyautogui.size()
+                                  cx = sw_now - 220
+                                  cy = 175
+                                  log_msg("KeepSeq", f"Absolute fallback mouse click at ({cx}, {cy}) for Keep.")
+                                  pyautogui.moveTo(cx, cy, duration=0.2)
+                                  pyautogui.click()
                               except Exception as e:
-                                  log_msg("AVG", f"Keyboard sequence error: {e}")
-                              avg_download_clicked = True
+                                  log_msg("KeepSeq", f"Backup Keep click error: {e}")
+                          else:
+                              log_msg("KeepSeq", "Software already downloaded. Skipping Keep UI backup.")
 
-                      # Browser Extensions Handling
                       if edge_window and action_mode == "install":
                           add_ext_btns = edge_window.descendants(control_type="Button", title="Add extension")
                           if add_ext_btns:
@@ -2849,39 +2822,20 @@ jobs:
                                       except Exception as e:
                                           log_msg("Extension", f"Failed to click '{btn_name}': {e}")
 
-                      # Ctrl+J to open downloads flyout
-                      can_ctrl_j = True
-                      if software_type == "avg" and not avg_download_clicked:
-                          can_ctrl_j = False
-
-                      if action_mode == "install" and not keep_clicked and edge_window and can_ctrl_j and (time.time() - last_ctrl_j_time > 15) and ctrl_j_attempts < 4:
-                          try:
-                              edge_window.set_focus()
-                              time.sleep(0.5)
-                              log_msg("Utility", f"Sending Ctrl+J... (Attempt {ctrl_j_attempts + 1}/4)")
-                              send_keys('^j')
-                              last_ctrl_j_time = time.time()
-                              ctrl_j_attempts += 1
-                          except Exception as e:
-                              log_msg("Utility", f"Ctrl+J failed: {e}")
-
                   except Exception as e:
                       pass
                   time.sleep(1)
 
           if __name__ == "__main__":
-              username      = sys.argv[1] if len(sys.argv) > 1 else ""
-              password      = sys.argv[2] if len(sys.argv) > 2 else ""
-              software_type = sys.argv[3] if len(sys.argv) > 3 else "avg"
-              use_proxy     = (sys.argv[4].lower() == "true") if len(sys.argv) > 4 else False
-              action_mode   = sys.argv[5] if len(sys.argv) > 5 else "install"
-              handle_automation(username, password, software_type, use_proxy, action_mode)
+              software_type = sys.argv[1] if len(sys.argv) > 1 else "avg"
+              action_mode   = sys.argv[2] if len(sys.argv) > 2 else "install"
+              handle_automation(software_type, action_mode)
           '@
           $handlerPy | Out-File -FilePath "$env:TEMP\auto_handler.py" -Encoding utf8
 
           Write-Host "[UI-Engine] Spinning up background Python process..." -ForegroundColor DarkGray
           Start-Process -FilePath "python" `
-              -ArgumentList "-u `"$env:TEMP\auto_handler.py`" `"$env:PROXY_USER`" `"$env:PROXY_PASS`" `"$env:SOFTWARE_TYPE`" `"$env:USE_PROXY`" `"$env:ACTION_MODE`"" `
+              -ArgumentList "-u `"$env:TEMP\auto_handler.py`" `"$env:SOFTWARE_TYPE`" `"$env:ACTION_MODE`"" `
               -WindowStyle Hidden
 
           $dlFolder    = "$env:USERPROFILE\Downloads"
@@ -2969,7 +2923,7 @@ jobs:
                           while ($locked) {
                               Start-Sleep -Seconds 2
                               try {
-                                  $s =[System.IO.File]::Open($file.FullName, 'Open', 'Read', 'None')
+                                  $s = [System.IO.File]::Open($file.FullName, 'Open', 'Read', 'None')
                                   $s.Close()
                                   $locked = $false
                                   Write-Output "[$($actualSoftware.ToUpper())-INSTALL] File unlocked and ready."
