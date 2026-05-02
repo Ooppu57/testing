@@ -366,7 +366,7 @@ jobs:
           SHORT_SW: ${{ matrix.short_sw_tag }}
           ACTION: ${{ matrix.action_mode }}
         run: |
-          import os, time, sys, uuid, json
+          import os, time, sys, uuid, json, re
           
           try:
               import requests
@@ -416,6 +416,39 @@ jobs:
               _map = {"America/New_York": "Eastern Standard Time", "America/Chicago": "Central Standard Time", "America/Denver": "Mountain Standard Time", "America/Phoenix": "US Mountain Standard Time", "America/Los_Angeles": "Pacific Standard Time", "America/Toronto": "Eastern Standard Time", "America/Sao_Paulo": "E. South America Standard Time", "America/Mexico_City": "Central Standard Time (Mexico)", "Europe/London": "GMT Standard Time", "Europe/Paris": "Romance Standard Time", "Europe/Berlin": "W. Europe Standard Time", "Europe/Madrid": "Romance Standard Time", "Europe/Rome": "W. Europe Standard Time", "Europe/Amsterdam": "W. Europe Standard Time", "Europe/Warsaw": "Central European Standard Time", "Asia/Ho_Chi_Minh": "SE Asia Standard Time", "Europe/Zurich": "W. Europe Standard Time", "Asia/Jakarta": "SE Asia Standard Time", "Australia/Sydney": "AUS Eastern Standard Time"}
               return _map.get(iana_tz, "UTC")
 
+          def parse_proxy(proxy_str):
+              original = proxy_str.strip()
+              if not original: return None
+              protocol = 'http'
+              rest = original
+              if '://' in rest:
+                  protocol, rest = rest.split('://', 1)
+                  if protocol.lower() == 'geolocation':
+                      protocol = 'http'
+
+              floppy_match = re.match(r'^([^:]+):([^@]+)@([^:]+):(\d+):(.+)$', rest)
+              if floppy_match:
+                  user, pwd, host, port, country_extra = floppy_match.groups()
+                  country = country_extra.split(' - ')[0].strip()
+                  return {'original': original, 'protocol': protocol, 'username': user, 'password': pwd, 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'country_name': country, 'country_code': None, 'url': f"http://{user}:{pwd}@{host}:{port}"}
+
+              std_match = re.match(r'^([^:]+):([^@]+)@([^:]+):(\d+)$', rest)
+              if std_match:
+                  user, pwd, host, port = std_match.groups()
+                  return {'original': original, 'protocol': protocol, 'username': user, 'password': pwd, 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'country_name': None, 'country_code': None, 'url': f"{protocol}://{user}:{pwd}@{host}:{port}"}
+
+              alt_match = re.match(r'^([^:]+):(\d+):([^:]+):(.+)$', rest)
+              if alt_match:
+                  host, port, user, pwd = alt_match.groups()
+                  return {'original': original, 'protocol': protocol, 'username': user, 'password': pwd, 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'country_name': None, 'country_code': None, 'url': f"{protocol}://{user}:{pwd}@{host}:{port}"}
+
+              simple_match = re.match(r'^([^:]+):(\d+)$', rest)
+              if simple_match:
+                  host, port = simple_match.groups()
+                  return {'original': original, 'protocol': protocol, 'username': '', 'password': '', 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'country_name': None, 'country_code': None, 'url': f"{protocol}://{host}:{port}"}
+
+              return None
+
           def validate_proxy(pinfo):
               try:
                   proxies_cfg = {"http": pinfo['url'], "https": pinfo['url']}
@@ -453,42 +486,12 @@ jobs:
                   
               return {'working': False, **pinfo}
 
-          def parse_proxy(raw_p):
-              raw_p = raw_p.strip()
-              if not raw_p: return None
-              protocol = 'http'
-              if '://' in raw_p:
-                  protocol, raw_p = raw_p.split('://', 1)
-              
-              parts = raw_p.split(':')
-              url, host, port, user, pwd = "", "", 0, "", ""
-              
-              try:
-                  if '@' in raw_p:
-                      user_pwd, host_port = raw_p.split('@')
-                      user, pwd = user_pwd.split(':')
-                      host, port = host_port.split(':')[:2]
-                      url = f"{protocol}://{user}:{pwd}@{host}:{port}"
-                  elif len(parts) >= 4:
-                      host, port, user, pwd = parts[0], parts[1], parts[2], parts[3]
-                      url = f"{protocol}://{user}:{pwd}@{host}:{port}"
-                  elif len(parts) >= 2:
-                      host, port = parts[0], parts[1]
-                      url = f"{protocol}://{host}:{port}"
-                  else:
-                      return None
-              except Exception:
-                  return None
-                  
-              return {'username': user, 'password': pwd, 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'url': url}
-
           # Parse inputs into lists
           manual_proxies = []
           scrapeops_keys =[]
           floppy_keys =[]
           
           if proxy_input and not without_proxy:
-              import re
               SCRAPEOPS_KEY_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
               FLOPPY_KEY_RE = re.compile(r'^[A-Za-z0-9_]{30,80}$')
               
@@ -1742,7 +1745,7 @@ jobs:
                       if not _is_interference_window(wt):
                           continue
 
-                      log_msg("WinGuard", f"Interference window detected: '{wt}'[{label}]")
+                      log_msg("WinGuard", f"Interference window detected: '{wt}' [{label}]")
                       closed = False
 
                       try:
@@ -2041,7 +2044,7 @@ jobs:
                           ctrl_type = el.element_info.control_type
                       except Exception:
                           continue
-                      if ctrl_type not in["Button", "Hyperlink", "Text", "Custom"]:
+                      if ctrl_type not in ["Button", "Hyperlink", "Text", "Custom"]:
                           continue
                       try:
                           txt = (el.window_text() or "").strip()
@@ -3158,7 +3161,7 @@ jobs:
           NUM_CYCLES: ${{ inputs.num_run_cycles }}
           WAIT_PERIOD: ${{ inputs.wait_period }}
         run: |
-          if [ -z "${{ secrets.GH_PAT }}" ]; then
+          if[ -z "${{ secrets.GH_PAT }}" ]; then
             export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
           else
             export GH_TOKEN="${{ secrets.GH_PAT }}"
