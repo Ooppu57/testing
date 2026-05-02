@@ -49,7 +49,7 @@ on:
           - '8'
           - '9'
           - '10'
-        default: '2'
+        default: '4'
       num_clicks:
         description: 'Number of Clicks (per cycle)'
         required: true
@@ -66,7 +66,7 @@ on:
           - '8'
           - '9'
           - '10'
-        default: '1'
+        default: '6'
       num_run_cycles:
         description: 'Number of Run Cycles'
         required: true
@@ -82,7 +82,7 @@ on:
           - '8'
           - '9'
           - '10'
-        default: '2'
+        default: '5'
       wait_period:
         description: 'Wait Period Between Cycles (Minutes)'
         required: true
@@ -94,7 +94,7 @@ on:
           - '6'
           - '8'
           - '10'
-        default: '0'
+        default: '2'
       current_cycle:
         description: 'Current Cycle (System Use Only)'
         required: true
@@ -124,7 +124,7 @@ on:
           - 'Ad-MVN - B4Books'
           - 'Ad-MVN - Orderflowz'
           - 'Ad-MVN - A2Z'
-        default: 'Opera - Fatradez'
+        default: 'AVG - B4Books'
       manual_software_url:
         description: 'Manual Software URL'
         required: false
@@ -139,7 +139,7 @@ on:
         description: 'ScrapeOps / FloppyData / Manual Proxies'
         required: false
         type: string
-        default: '1IFG1IFjMPZi4DcrQ16KF2ku_fbxeCXI'
+        default: 'geolocation://GWPgZCX0nLElwSyZ:GyEA7Oq7PHm5vIZ6@geo.floppydata.com:10080:United States - 975 geolocation://FUf1ubibIw9Sj8X4:Fhd0swVBfUuOiQgN@geo.floppydata.com:10080:United States - 976 geolocation://odYTxOUvrVaivDj1:2OGZAtGA0vOiZXgz@geo.floppydata.com:10080:United States - 977 geolocation://qXIQthGBZYMJ4aSo:Iy6yxKEC46dop7Ym@geo.floppydata.com:10080:United States - 978 geolocation://BUvcVqz1DmtjI8Qa:xLuyQ1IbYt83oB5c@geo.floppydata.com:10080:United States - 979 geolocation://lIQ1yiDalXCyD0oa:ZU1COoglf8LOoXNG@geo.floppydata.com:10080:United States - 980 geolocation://cebvMaKVjDZo7nwu:5pWJSUOC0mWi73Dd@geo.floppydata.com:10080:United States - 981 geolocation://hUeUJQc5FUKQ6V48:QRyTXf5yY0AIjcJH@geo.floppydata.com:10080:United States - 982 geolocation://fzFv2aodTPtGR3VD:9vUizvLu8NiYi0nH@geo.floppydata.com:10080:United States - 983 geolocation://HiUQgXgG6HV44kWy:7us9UtM16zemXfOF@geo.floppydata.com:10080:United States - 984 geolocation://QAbmvLiQ7U6PPY0F:C2c7V5HAfjyFVM1h@geo.floppydata.com:10080:United States - 985 geolocation://92V5XKJdaeRyGBII:rb8MtdNRGDPjyP8D@geo.floppydata.com:10080:United States - 963 geolocation://O0bmRph6umGoYw7a:K5LpNzdpijZBqugV@geo.floppydata.com:10080:United States - 964 geolocation://vhyTzOuLMmkadqkF:VdMIJ3htqgzcvaAY@geo.floppydata.com:10080:United States - 965 geolocation://5qIXtMoFmmbvBosg:pudHbRayPUPVAUlv@geo.floppydata.com:10080:United States - 966 geolocation://VJm0M3AW5dpBWkGq:ofTwWKCwuBl8tgGO@geo.floppydata.com:10080:United States - 967 geolocation://RGLwQnn6zUBOp2jW:QKkxLHaVrzWue0JS@geo.floppydata.com:10080:United States - 968 geolocation://Tvm4HKqVGNy0sFD1:0zMq2QVLOj4zKTmB@geo.floppydata.com:10080:United States - 969 geolocation://HUUoa1XdQnjXTXZ6:RPnGqVTMQXvQkFwR@geo.floppydata.com:10080:United States - 970 geolocation://YNmZ1anuGYBTRcdg:qAqRrJzWlTxsyj51@geo.floppydata.com:10080:United States - 971 geolocation://Syy2P1WfRzVikc3h:pIhBjqQi1h8jAetS@geo.floppydata.com:10080:United States - 972 geolocation://UghLVUkNGahSlcov:WE92q0uv2q9Fdzbf@geo.floppydata.com:10080:France - 84 geolocation://zvBW8p7YVML3bdUP:9IET8FNFCvIlw66s@geo.floppydata.com:10080:United States - 973 geolocation://zX6qmBSRhFmxWH3X:SybmJn3S9dt4S39O@geo.floppydata.com:10080:United States - 974  geolocation://kmcV4UR9ZUAD5UCw:9FfKT3jRJdMvHpk8@geo.floppydata.com:10080:United States - 951 geolocation://hITzJSF84A88THJz:ofyqMIrGMKQhkWCK@geo.floppydata.com:10080:United States - 952 geolocation://LMtJElEsrScMtHju:JObjlnS6UmesV8vG@geo.floppydata.com:10080:United States - 953 geolocation://NsmqcowASIjdwiFo:l6Dw1V0DR0VmY7UD@geo.floppydata.com:10080:United States - 954 geolocation://YpWPFlkMJNs1lEQD:oGlGTVRIHwPMcRuL@geo.floppydata.com:10080:United States - 955 geolocation://HkzJq9OM2LI0gatr:z69dQNLYCQc3u2wT@geo.floppydata.com:10080:United States - 956 geolocation://nReLDjrXM6rA9QRh:O8zisoV5PYbGElIY@geo.floppydata.com:10080:United States - 957 geolocation://HstJM8qO3XGY4nV1:k33vAp5kslFgCEzW@geo.floppydata.com:10080:United States - 958 geolocation://jgHhMhpN6QOw05ZL:Ju95Hmix9fN2TmYp@geo.floppydata.com:10080:United States - 959 geolocation://EvCL3yrMZS1rtoxZ:NYwgQLIhTQcRs8SD@geo.floppydata.com:10080:United States - 960 geolocation://NGCVdndgCJ2XeaLi:sFj2Ino7Y4uENmVX@geo.floppydata.com:10080:United States - 961 geolocation://3PfsOnIjiXlAtM2T:iwJQk4J4gX6cVY2y@geo.floppydata.com:10080:United States - 962 geolocation://5KF6sdpb2E9hnWlY:TRdqkO2qhmLyxWya@geo.floppydata.com:10080:United States - 939 geolocation://QOjoqiyCHsDwIES7:Fn3s0wOWgLbOZiys@geo.floppydata.com:10080:United States - 940 geolocation://GkIFMhemabRKel4n:tZeHDAG9Saj4qbHQ@geo.floppydata.com:10080:United States - 941 geolocation://MT9ttUWk1q0L6JoG:ZbZ2LFSIg0g48IJH@geo.floppydata.com:10080:United States - 942 geolocation://YJff9ZPnu7wTH1zK:YvCGvjAcXTWsTQL3@geo.floppydata.com:10080:United States - 943 geolocation://gJlIQcLbEivDjBpF:JEIXW5OQCqQIYyyJ@geo.floppydata.com:10080:United States - 944 geolocation://ty5XlA0DTQBGTcKi:A9Bk2yRNlq2Ky7zR@geo.floppydata.com:10080:United States - 945 geolocation://VMt5voMY4FLrYPb6:LmQLbDNxumIGzYU3@geo.floppydata.com:10080:United States - 946 geolocation://Ib0u4RoIo86uOJch:mgzb0w784BMMqEEl@geo.floppydata.com:10080:United States - 947 geolocation://5YosyMrbkyYZ7ZUE:EYNBpPRXd9kOwz0D@geo.floppydata.com:10080:United States - 948 geolocation://ksL6Xj2uzZqyXFfX:e70UP2oLlYmS0iCe@geo.floppydata.com:10080:United States - 949 geolocation://p2LPBBu80wQBTFRm:Pa1agjcQqpCis4QK@geo.floppydata.com:10080:United States - 950 '
       use_without_proxy:
         description: 'Run without proxy'
         required: true
