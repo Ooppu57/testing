@@ -32,7 +32,7 @@ on:
           - '8'
           - '9'
           - '10'
-        default: '5'
+        default: '1'
       num_installs:
         description: 'Number of Installs (per cycle)'
         required: true
@@ -49,7 +49,7 @@ on:
           - '8'
           - '9'
           - '10'
-        default: '5'
+        default: '2'
       num_clicks:
         description: 'Number of Clicks (per cycle)'
         required: true
@@ -82,7 +82,7 @@ on:
           - '8'
           - '9'
           - '10'
-        default: '1'
+        default: '2'
       wait_period:
         description: 'Wait Period Between Cycles (Minutes)'
         required: true
