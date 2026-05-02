@@ -32,17 +32,17 @@ on:
           - '8'
           - '9'
           - '10'
-        default: ''
+        default: '5'
       num_installs:
         description: 'Number of Installs'
         required: true
         type: string
-        default: ''
+        default: '5'
       num_clicks:
         description: 'Number of Clicks'
         required: true
         type: string
-        default: ''
+        default: '1'
       software_choice:
         description: 'Select Software & Link'
         required: true
@@ -67,7 +67,7 @@ on:
           - 'Ad-MVN - B4Books'
           - 'Ad-MVN - Orderflowz'
           - 'Ad-MVN - A2Z'
-        default: ''
+        default: 'Opera - Fatradez'
       manual_software_url:
         description: 'Manual Software URL'
         required: false
@@ -170,7 +170,7 @@ jobs:
               with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                   f.write("has_tasks=true\n")
 
-          action_list = ["install"] * num_installs + ["click"] * num_clicks
+          action_list = ["install"] * num_installs +["click"] * num_clicks
           random.shuffle(action_list)
 
           print(f"[Action Matrix] Total Tasks Queued: {tasks_total}")
@@ -536,6 +536,7 @@ jobs:
 
           elif scrapeops_keys:
               for attempt in range(len(scrapeops_keys)):
+                  # 1 API Key per 15 Tasks
                   key_idx = (absolute_idx // 15 + attempt) % len(scrapeops_keys)
                   current_key = scrapeops_keys[key_idx]
                   print(f"[ScrapeOps] Testing API Key ending in ...{current_key[-4:]} (Attempt {attempt+1})")
@@ -1042,38 +1043,38 @@ jobs:
               # English
               "keep", "keep anyway", "keep file", "run anyway",
               "keep download", "download anyway", "allow",
-              # French
+              # French (France + Canada + Switzerland + Belgium)
               "conserver", "conserver quand même", "garder", "garder quand même",
               "conserver le fichier", "télécharger quand même",
               "continuer quand même", "autoriser",
-              # Portuguese
+              # Portuguese / Brazilian (Brazil)
               "manter", "manter assim mesmo", "manter arquivo",
               "baixar assim mesmo", "continuar assim mesmo",
               "permitir", "manter de qualquer forma",
-              # German
+              # German (Germany + Switzerland + Austria)
               "beibehalten", "trotzdem beibehalten", "datei beibehalten",
               "trotzdem herunterladen", "trotzdem ausführen",
               "zulassen", "behalten", "trotzdem behalten",
-              # Spanish
+              # Spanish (Mexico + Spain)
               "conservar", "conservar de todas formas", "conservar igualmente",
               "mantener", "mantener de todas formas", "descargar igualmente",
               "ejecutar igualmente", "permitir",
-              # Italian
+              # Italian (Italy + Switzerland)
               "mantieni", "mantieni comunque", "mantieni il file",
               "scarica comunque", "esegui comunque", "consenti",
               "tieni", "tieni comunque",
-              # Dutch
+              # Dutch (Netherlands + Belgium)
               "bewaren", "toch bewaren", "bestand bewaren",
               "toch downloaden", "toch uitvoeren",
               "toestaan", "behouden", "toch behouden",
-              # Polish
+              # Polish (Poland)
               "zachowaj", "zachowaj mimo to", "zachowaj plik",
               "pobierz mimo to", "uruchom mimo to",
               "zezwól", "zatrzymaj", "zatrzymaj mimo to",
-              # Vietnamese
+              # Vietnamese (Vietnam)
               "giữ lại", "vẫn giữ", "giữ tệp",
               "vẫn tải xuống", "vẫn chạy", "cho phép",
-              # Indonesian
+              # Indonesian (Indonesia)
               "simpan", "tetap simpan", "simpan file",
               "tetap unduh", "tetap jalankan", "izinkan",
           ]
@@ -1082,6 +1083,7 @@ jobs:
           # MULTILINGUAL OPERA ONE POST-INSTALL BUTTON KEYWORDS
           # ══════════════════════════════════════════════════════════════════════
 
+          # "Next" button in all supported languages
           OPERA_NEXT_KEYWORDS =[
               # English
               "next", "next step", "continue", "proceed",
@@ -1107,6 +1109,7 @@ jobs:
               "selanjutnya", "lanjut", "berikutnya",
           ]
 
+          # "Done" / "Finish" button in all supported languages
           OPERA_DONE_KEYWORDS =[
               # English
               "done", "finish", "complete", "close", "finalize",
@@ -1137,6 +1140,7 @@ jobs:
               "selesai", "tutup", "akhiri",
           ]
 
+          # "Submit" button in all supported languages
           OPERA_SUBMIT_KEYWORDS =[
               # English
               "submit", "send", "confirm", "apply", "save",
@@ -1193,6 +1197,11 @@ jobs:
               "dane logowania", "poświadczenia", "poswiadczenia",
               "đăng nhập", "xác thực", "kết nối", "thông tin xác thực",
               "masuk", "autentikasi", "sambungkan", "kredensial",
+              "войти", "аутентификация", "подключиться", "учётные данные",
+              "giriş", "kimlik doğrulama", "bağlan", "kimlik bilgileri",
+              "登录", "身份验证", "连接", "凭据",
+              "サインイン", "認証", "接続", "資格情報",
+              "로그인", "인증", "연결", "자격 증명",
           ]
 
           USERNAME_FIELD_KEYWORDS =[
@@ -1208,6 +1217,8 @@ jobs:
               "nazwa użytkownika", "nazwa uzytkownika", "użytkownik", "uzytkownik",
               "tên người dùng", "tài khoản",
               "nama pengguna", "pengguna",
+              "имя пользователя", "логин",
+              "kullanıcı adı", "kullanici adi",
           ]
 
           PASSWORD_FIELD_KEYWORDS =[
@@ -1221,6 +1232,8 @@ jobs:
               "hasło", "haslo",
               "mật khẩu",
               "kata sandi",
+              "пароль",
+              "şifre", "sifre", "parola",
           ]
 
           SUBMIT_BUTTON_KEYWORDS =[
@@ -1235,6 +1248,8 @@ jobs:
               "zaloguj", "połącz", "polacz", "kontynuuj", "potwierdź", "potwierdz",
               "đăng nhập", "tiếp tục", "xác nhận",
               "masuk", "lanjutkan", "konfirmasi",
+              "войти", "подключиться", "продолжить",
+              "giriş yap", "bağlan", "devam", "onayla",
           ]
 
           ADDRESS_BAR_NAMES =[
@@ -1501,7 +1516,7 @@ jobs:
                           ctrl_type = el.element_info.control_type
                       except Exception:
                           continue
-                      if ctrl_type not in ["Button", "Hyperlink", "Text", "Image", "Custom"]:
+                      if ctrl_type not in["Button", "Hyperlink", "Text", "Image", "Custom"]:
                           continue
                       try:
                           wt = (el.window_text() or "").strip()
@@ -1609,7 +1624,7 @@ jobs:
                   log_msg("Keep", f"[{label}] Strategy1 scan error: {e}")
 
               try:
-                  for container_type in ["ToolBar", "Pane", "Group", "Custom"]:
+                  for container_type in["ToolBar", "Pane", "Group", "Custom"]:
                       try:
                           containers = edge_window.descendants(control_type=container_type)
                       except Exception:
@@ -1681,7 +1696,7 @@ jobs:
                       if not _is_interference_window(wt):
                           continue
 
-                      log_msg("WinGuard", f"Interference window detected: '{wt}' [{label}]")
+                      log_msg("WinGuard", f"Interference window detected: '{wt}'[{label}]")
                       closed = False
 
                       try:
@@ -1915,8 +1930,11 @@ jobs:
               result = force_maximize_and_focus_target(desktop, target_window, software_type, label=label)
               return result if result else target_window
 
-          def click_opera_button(desktop, opera_window, software_type, button_names, label=""):
-              """Robustly find and click a button in the Opera window by name. Falls back to False if not found."""
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL OPERA BUTTON CLICKER
+          # ══════════════════════════════════════════════════════════════════════
+          def click_opera_button_multilingual(desktop, opera_window, software_type,
+                                              keyword_list, label="", fallback_coords=None):
               try:
                   target = opera_window
                   if target is None or not target.is_visible():
@@ -1926,53 +1944,88 @@ jobs:
                               target = w
                               break
                   if not target:
-                      log_msg("ButtonClick", f"[{label}] Target Opera window not found.")
+                      log_msg("MLBtn", f"[{label}] Target Opera window not found.")
+                      if fallback_coords:
+                          fx, fy = fallback_coords
+                          log_msg("MLBtn", f"[{label}] Fallback click at ({fx}, {fy})...")
+                          try:
+                              pyautogui.moveTo(fx, fy, duration=0.2)
+                              pyautogui.click(fx, fy)
+                              return True
+                          except Exception as ef:
+                              log_msg("MLBtn", f"[{label}] Fallback click failed: {ef}")
                       return False
 
                   target.set_focus()
                   time.sleep(0.3)
 
-                  # Strategy 1: Exact title match via descendants filter
-                  for name in button_names:
-                      btns = target.descendants(control_type="Button", title=name)
-                      if btns:
-                          try:
-                              btns[0].click_input()
-                              log_msg("ButtonClick", f"[{label}] Clicked '{name}' via exact title match.")
-                              return True
-                          except Exception as e:
-                              log_msg("ButtonClick", f"[{label}] click_input on '{name}' failed: {e}")
+                  # Pass 1: exact title match against each keyword
+                  for kw in keyword_list:
+                      try:
+                          btns = target.descendants(control_type="Button", title=kw)
+                          if btns:
+                              try:
+                                  btns[0].click_input()
+                                  log_msg("MLBtn", f"[{label}] Clicked '{kw}' via exact title match.")
+                                  return True
+                              except Exception as e:
+                                  log_msg("MLBtn", f"[{label}] click_input on exact '{kw}' failed: {e}")
+                      except Exception:
+                          pass
 
-                  # Strategy 2: Partial case-insensitive match across all buttons
+                  # Pass 2: partial text match on all Button descendants
                   for btn in target.descendants(control_type="Button"):
                       try:
-                          txt = btn.window_text()
-                          if txt:
-                              for name in button_names:
-                                  if name.lower() in txt.lower():
-                                      btn.click_input()
-                                      log_msg("ButtonClick", f"[{label}] Clicked '{txt}' via partial match for '{name}'.")
-                                      return True
-                      except:
+                          txt = (btn.window_text() or "").strip()
+                          nm  = (btn.element_info.name or "").strip()
+                          combined = (txt + " " + nm).strip()
+                      except Exception:
                           continue
+                      if combined and _matches_any(combined, keyword_list):
+                          try:
+                              btn.click_input()
+                              log_msg("MLBtn", f"[{label}] Clicked '{combined[:40]}' via partial keyword match.")
+                              return True
+                          except Exception as e:
+                              log_msg("MLBtn", f"[{label}] Partial match click failed for '{combined[:40]}': {e}")
 
-                  # Strategy 3: Generic descendant text exact match
+                  # Pass 3: scan all descendants
                   for el in target.descendants():
                       try:
-                          txt = el.window_text()
-                          if txt:
-                              for name in button_names:
-                                  if name.lower() == txt.strip().lower():
-                                      el.click_input()
-                                      log_msg("ButtonClick", f"[{label}] Clicked '{txt}' via generic descendant match.")
-                                      return True
-                      except:
+                          ctrl_type = el.element_info.control_type
+                      except Exception:
                           continue
+                      if ctrl_type not in["Button", "Hyperlink", "Text", "Custom"]:
+                          continue
+                      try:
+                          txt = (el.window_text() or "").strip()
+                      except Exception:
+                          txt = ""
+                      if not txt or len(txt) > 80:
+                          continue
+                      if _matches_any(txt, keyword_list):
+                          try:
+                              el.click_input()
+                              log_msg("MLBtn", f"[{label}] Clicked '{txt[:40]}' via generic descendant scan.")
+                              return True
+                          except Exception as e:
+                              log_msg("MLBtn", f"[{label}] Descendant click failed for '{txt[:40]}': {e}")
 
-                  return False
               except Exception as e:
-                  log_msg("ButtonClick", f"[{label}] Exception during button click: {e}")
-                  return False
+                  log_msg("MLBtn", f"[{label}] Exception during multilingual button click: {e}")
+
+              # Fallback: coordinate click
+              if fallback_coords:
+                  fx, fy = fallback_coords
+                  log_msg("MLBtn", f"[{label}] All passes failed — fallback click at ({fx}, {fy}).")
+                  try:
+                      pyautogui.moveTo(fx, fy, duration=0.2)
+                      pyautogui.click(fx, fy)
+                      return True
+                  except Exception as ef:
+                      log_msg("MLBtn", f"[{label}] Fallback click also failed: {ef}")
+
+              return False
 
           # ══════════════════════════════════════════════════════════════════════
           # MULTILINGUAL PROXY AUTH INJECTION
@@ -1989,8 +2042,8 @@ jobs:
                       u_struct, p_struct = _is_auth_dialog_by_structure(window)
                       if u_struct and p_struct:
                           log_msg("ProxyAuth", f"[{label}] Using structural detection (2-field dialog).")
-                          user_fields = [u_struct]
-                          pass_fields = [p_struct]
+                          user_fields =[u_struct]
+                          pass_fields =[p_struct]
 
                   if user_fields and pass_fields:
                       if _is_address_bar_control(user_fields[0]) or _is_address_bar_control(pass_fields[0]):
@@ -2087,20 +2140,18 @@ jobs:
                   return False
 
           # ══════════════════════════════════════════════════════════════════════
-          # OPERA ONE POST-INSTALL SEQUENCE (USER PROVIDED, MULTILINGUAL ENHANCED)
+          # OPERA ONE POST-INSTALL SEQUENCE
           # ══════════════════════════════════════════════════════════════════════
           def opera_one_post_install_sequence(opera_window, software_type="opera_one"):
-              log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Starting ===")
+              log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Starting (Multilingual) ===")
               desktop = Desktop(backend="uia")
 
-              # ── STEP 1: Wait 50 seconds after installer executed ──────────────
               log_msg("PostInstall-OP1", "STEP 1: Waiting 50 seconds for Opera One to fully initialize...")
               for s in range(1, 51):
                   log_msg("PostInstall-OP1", f"  Initialization wait: {s}/50 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 1 COMPLETE: 50-second initialization wait finished.")
 
-              # ── STEP 2: Find window, maximize to full screen (robust) ─────────
               log_msg("PostInstall-OP1", "STEP 2: Locating Opera One window and applying full-screen maximize...")
               desktop = Desktop(backend="uia")
               opera_window = robust_maximize_opera_window(desktop, software_type, label="step2-fullscreen")
@@ -2109,21 +2160,18 @@ jobs:
               else:
                   log_msg("PostInstall-OP1", f"STEP 2 COMPLETE: Opera window maximized -> '{opera_window.window_text()}'")
 
-              # ── STEP 3: Wait 5 seconds ────────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 3: Waiting 5 seconds after maximize...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Post-maximize wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 3 COMPLETE.")
 
-              # ── STEP 4: Wait 5 seconds (additional settle time) ───────────────
               log_msg("PostInstall-OP1", "STEP 4: Additional 5-second settle wait...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Settle wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 4 COMPLETE.")
 
-              # ── STEP 5: 1 mouse click on center of screen ─────────────────────
               sw, sh = pyautogui.size()
               cx, cy = sw // 2, sh // 2
               log_msg("PostInstall-OP1", f"STEP 5: Clicking center of screen at ({cx}, {cy}) using mouse...")
@@ -2137,101 +2185,107 @@ jobs:
               except Exception as e:
                   log_msg("PostInstall-OP1", f"STEP 5 ERROR: Mouse click failed: {e}")
 
-              # ── STEP 6: Wait 5 seconds ────────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 6: Waiting 5 seconds after center click...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Post-click wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 6 COMPLETE.")
 
-              # ── STEP 7: Click "Next" 6 times (2s delay each) ──────────────────
-              log_msg("PostInstall-OP1", "STEP 7: Detecting and clicking 'Next' button 6 times (2 second delay between each)...")
-              for i in range(1, 7):
+              # ── STEP 7: Click "Next" 7 times (1s delay each) — MULTILINGUAL ─────────────
+              log_msg("PostInstall-OP1", "STEP 7: Clicking 'Next' button 7 times (multilingual, 1s delay each)...")
+              for i in range(1, 8):
                   desktop = Desktop(backend="uia")
-                  opera_window = force_maximize_and_focus_target(desktop, opera_window, software_type, label=f"step7-NEXT-{i}")
-                  log_msg("PostInstall-OP1", f"  Next click attempt {i}/6...")
-                  clicked = click_opera_button(desktop, opera_window, software_type, OPERA_NEXT_KEYWORDS, label=f"NEXT-{i}")
+                  opera_window = force_maximize_and_focus_target(
+                      desktop, opera_window, software_type, label=f"step7-NEXT-{i}"
+                  )
+                  log_msg("PostInstall-OP1", f"  Next click attempt {i}/7 (multilingual)...")
+                  sw_now, sh_now = pyautogui.size()
+                  
+                  # Opera One's Next button is specifically located at the bottom right
+                  fallback_next = (int(sw_now * 0.90), int(sh_now * 0.90))
+                  
+                  clicked = click_opera_button_multilingual(
+                      desktop, opera_window, software_type,
+                      keyword_list=OPERA_NEXT_KEYWORDS,
+                      label=f"NEXT-{i}",
+                      fallback_coords=fallback_next
+                  )
                   if clicked:
-                      log_msg("PostInstall-OP1", f"  Next {i}/6 clicked successfully.")
+                      log_msg("PostInstall-OP1", f"  Next {i}/7 clicked successfully.")
                   else:
-                      log_msg("PostInstall-OP1", f"  Next {i}/6 not found via UI automation. Attempting fallback click at bottom-right...")
-                      try:
-                          sw, sh = pyautogui.size()
-                          fx, fy = int(sw * 0.90), int(sh * 0.90)
-                          pyautogui.moveTo(fx, fy, duration=0.2)
-                          pyautogui.click(fx, fy)
-                          log_msg("PostInstall-OP1", f"  Fallback click executed at ({fx}, {fy}).")
-                      except Exception as e2:
-                          log_msg("PostInstall-OP1", f"  Fallback click failed: {e2}")
-                  log_msg("PostInstall-OP1", f"  Waiting 2 seconds after Next click {i}...")
-                  time.sleep(2)
-              log_msg("PostInstall-OP1", "STEP 7 COMPLETE: All 6 Next clicks attempted.")
+                      log_msg("PostInstall-OP1", f"  Next {i}/7 not found via multilingual scan — fallback already attempted.")
+                  
+                  log_msg("PostInstall-OP1", f"  Waiting 1 second after Next click {i}...")
+                  time.sleep(1)
+              log_msg("PostInstall-OP1", "STEP 7 COMPLETE: All 7 Next clicks attempted.")
 
-              # ── STEP 7b: Click "Done" (appears in same location after 6th Next) ──
-              log_msg("PostInstall-OP1", "STEP 7b: Detecting and clicking 'Done' button...")
+              # ── STEP 7b: Click "Done" — MULTILINGUAL ──────────────────────────
+              log_msg("PostInstall-OP1", "STEP 7b: Clicking 'Done'/'Finish' button (multilingual)...")
               desktop = Desktop(backend="uia")
-              opera_window = force_maximize_and_focus_target(desktop, opera_window, software_type, label="step7b-DONE")
-              clicked_done = click_opera_button(desktop, opera_window, software_type, OPERA_DONE_KEYWORDS, label="DONE")
+              opera_window = force_maximize_and_focus_target(
+                  desktop, opera_window, software_type, label="step7b-DONE"
+              )
+              sw_now, sh_now = pyautogui.size()
+              
+              # 'Done' usually replaces 'Next' at the exact same bottom right position
+              fallback_done = (int(sw_now * 0.90), int(sh_now * 0.90))
+              
+              clicked_done = click_opera_button_multilingual(
+                  desktop, opera_window, software_type,
+                  keyword_list=OPERA_DONE_KEYWORDS,
+                  label="DONE",
+                  fallback_coords=fallback_done
+              )
               if clicked_done:
-                  log_msg("PostInstall-OP1", "STEP 7b COMPLETE: 'Done' clicked successfully.")
+                  log_msg("PostInstall-OP1", "STEP 7b COMPLETE: 'Done'/'Finish' clicked successfully.")
               else:
-                  log_msg("PostInstall-OP1", "  'Done' not found via UI automation. Attempting fallback click at bottom-right...")
-                  try:
-                      sw, sh = pyautogui.size()
-                      fx, fy = int(sw * 0.90), int(sh * 0.90)
-                      pyautogui.moveTo(fx, fy, duration=0.2)
-                      pyautogui.click(fx, fy)
-                      log_msg("PostInstall-OP1", f"  Fallback click executed at ({fx}, {fy}) for Done.")
-                  except Exception as e2:
-                      log_msg("PostInstall-OP1", f"  Fallback click failed: {e2}")
+                  log_msg("PostInstall-OP1", "STEP 7b: Multilingual Done not found — fallback already attempted.")
 
-              # ── STEP 8: Wait 5 seconds ────────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 8: Waiting 5 seconds after Done click...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Post-Done wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 8 COMPLETE.")
 
-              # ── STEP 9: Press ENTER ───────────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 9: Pressing ENTER key...")
               desktop = Desktop(backend="uia")
-              opera_window = force_maximize_and_focus_target(desktop, opera_window, software_type, label="step9-ENTER")
+              opera_window = force_maximize_and_focus_target(
+                  desktop, opera_window, software_type, label="step9-ENTER"
+              )
               send_keys('{ENTER}')
               log_msg("PostInstall-OP1", "STEP 9 COMPLETE: ENTER key pressed.")
 
-              # ── STEP 10: Wait 5 seconds ───────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 10: Waiting 5 seconds after ENTER...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Post-ENTER wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 10 COMPLETE.")
 
-              # ── STEP 11: Detect and click Submit button ───────────────────────
-              log_msg("PostInstall-OP1", "STEP 11: Detecting and clicking 'Submit' button...")
+              # ── STEP 11: Click "Submit" — MULTILINGUAL ─────────────────────────
+              log_msg("PostInstall-OP1", "STEP 11: Clicking 'Submit' button (multilingual)...")
               desktop = Desktop(backend="uia")
-              opera_window = force_maximize_and_focus_target(desktop, opera_window, software_type, label="step11-SUBMIT")
-              clicked_submit = click_opera_button(desktop, opera_window, software_type, OPERA_SUBMIT_KEYWORDS, label="SUBMIT")
+              opera_window = force_maximize_and_focus_target(
+                  desktop, opera_window, software_type, label="step11-SUBMIT"
+              )
+              sw_now, sh_now = pyautogui.size()
+              fallback_submit = (sw_now // 2, int(sh_now * 0.85))
+              clicked_submit = click_opera_button_multilingual(
+                  desktop, opera_window, software_type,
+                  keyword_list=OPERA_SUBMIT_KEYWORDS,
+                  label="SUBMIT",
+                  fallback_coords=fallback_submit
+              )
               if clicked_submit:
                   log_msg("PostInstall-OP1", "STEP 11 COMPLETE: 'Submit' clicked successfully.")
               else:
-                  log_msg("PostInstall-OP1", "  'Submit' not found via UI automation. Attempting fallback click at center-bottom...")
-                  try:
-                      sw, sh = pyautogui.size()
-                      fx, fy = sw // 2, int(sh * 0.85)
-                      pyautogui.moveTo(fx, fy, duration=0.2)
-                      pyautogui.click(fx, fy)
-                      log_msg("PostInstall-OP1", f"  Fallback click executed at ({fx}, {fy}) for Submit.")
-                  except Exception as e2:
-                      log_msg("PostInstall-OP1", f"  Fallback click failed: {e2}")
+                  log_msg("PostInstall-OP1", "STEP 11: Multilingual Submit not found — fallback already attempted.")
 
-              # ── STEP 12: Wait 5 seconds after Submit ──────────────────────────
               log_msg("PostInstall-OP1", "STEP 12: Waiting 5 seconds after Submit click...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Post-Submit wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 12 COMPLETE.")
 
-              # ── STEP 13: TAB CYCLE — 8 TABs → 18 TABs, Ctrl+T before & after, 5s waits ──
               log_msg("PostInstall-OP1", "STEP 13: Starting TAB cycle sequence (8 TABs → 18 TABs)...")
               tab_sequence = list(range(8, 19))
               log_msg("PostInstall-OP1", f"  TAB sequence plan: {tab_sequence}")
@@ -2239,9 +2293,10 @@ jobs:
               for cycle_idx, tab_count in enumerate(tab_sequence):
                   log_msg("PostInstall-OP1", f"--- TAB CYCLE {cycle_idx + 1}/{len(tab_sequence)}: {tab_count} TAB presses ---")
 
-                  # Ctrl+T before tab presses
                   desktop = Desktop(backend="uia")
-                  opera_window = force_maximize_and_focus_target(desktop, opera_window, software_type, label=f"cycle{cycle_idx+1}-pre-CtrlT")
+                  opera_window = force_maximize_and_focus_target(
+                      desktop, opera_window, software_type, label=f"cycle{cycle_idx+1}-pre-CtrlT"
+                  )
                   log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Pressing Ctrl+T (before TABs)...")
                   send_keys('^t')
                   log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Ctrl+T sent. Waiting 5 seconds...")
@@ -2250,32 +2305,35 @@ jobs:
                       time.sleep(1)
                   log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Pre-TAB wait complete.")
 
-                  # Press TAB key tab_count times with 1s delay between each
                   log_msg("PostInstall-OP1", f"  Pressing TAB key {tab_count} times (1 second delay between each)...")
                   for i in range(1, tab_count + 1):
                       desktop = Desktop(backend="uia")
-                      opera_window = force_maximize_and_focus_target(desktop, opera_window, software_type, label=f"cycle{cycle_idx+1}-TAB{tab_count}-press{i}")
+                      opera_window = force_maximize_and_focus_target(
+                          desktop, opera_window, software_type,
+                          label=f"cycle{cycle_idx+1}-TAB{tab_count}-press{i}"
+                      )
                       log_msg("PostInstall-OP1", f"    TAB press {i}/{tab_count} (cycle {cycle_idx + 1})...")
                       send_keys('{TAB}')
                       log_msg("PostInstall-OP1", f"    TAB {i}/{tab_count} sent. Waiting 1 second...")
                       time.sleep(1)
 
-                  # Press ENTER after TAB sequence
                   desktop = Desktop(backend="uia")
-                  opera_window = force_maximize_and_focus_target(desktop, opera_window, software_type, label=f"cycle{cycle_idx+1}-ENTER")
+                  opera_window = force_maximize_and_focus_target(
+                      desktop, opera_window, software_type, label=f"cycle{cycle_idx+1}-ENTER"
+                  )
                   log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Pressing ENTER after {tab_count} TABs...")
                   send_keys('{ENTER}')
                   log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: ENTER sent.")
 
-                  # Wait 5 seconds after ENTER
                   log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Waiting 5 seconds after ENTER...")
                   for s in range(1, 6):
                       log_msg("PostInstall-OP1", f"    Post-ENTER wait: {s}/5 seconds...")
                       time.sleep(1)
 
-                  # Ctrl+T after tab presses
                   desktop = Desktop(backend="uia")
-                  opera_window = force_maximize_and_focus_target(desktop, opera_window, software_type, label=f"cycle{cycle_idx+1}-post-CtrlT")
+                  opera_window = force_maximize_and_focus_target(
+                      desktop, opera_window, software_type, label=f"cycle{cycle_idx+1}-post-CtrlT"
+                  )
                   log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Pressing Ctrl+T (after TABs)...")
                   send_keys('^t')
                   log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Ctrl+T sent. Waiting 5 seconds...")
@@ -2285,7 +2343,7 @@ jobs:
                   log_msg("PostInstall-OP1", f"--- TAB CYCLE {cycle_idx + 1}/{len(tab_sequence)} COMPLETE ---")
 
               log_msg("PostInstall-OP1", "STEP 13 COMPLETE: All TAB cycles finished.")
-              log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Completed Successfully ===")
+              log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Completed Successfully (Multilingual) ===")
 
           def opera_gx_post_install_sequence(opera_window):
               log_msg("PostInstall-OPGX", "=== Opera GX Post-Install Sequence Starting ===")
@@ -2574,7 +2632,7 @@ jobs:
 
                       if action_mode == "install" and not opera_gx_post_install_done:
                           is_gx = (software_type == "opera_gx")
-                          is_dynamic = software_type in ["ad_mvn", "dynamic_opera", "opera_smart_link"]
+                          is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
                           if is_gx or is_dynamic:
                               if opera_gx_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
                                   opera_gx_installer_executed_time = time.time()
@@ -2863,7 +2921,7 @@ jobs:
                           while ($locked) {
                               Start-Sleep -Seconds 2
                               try {
-                                  $s =[System.IO.File]::Open($file.FullName, 'Open', 'Read', 'None')
+                                  $s = [System.IO.File]::Open($file.FullName, 'Open', 'Read', 'None')
                                   $s.Close()
                                   $locked = $false
                                   Write-Output "[$($actualSoftware.ToUpper())-INSTALL] File unlocked and ready."
