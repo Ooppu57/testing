@@ -32,17 +32,17 @@ on:
           - '8'
           - '9'
           - '10'
-        default: '5'
+        default: ''
       num_installs:
         description: 'Number of Installs'
         required: true
         type: string
-        default: '5'
+        default: ''
       num_clicks:
         description: 'Number of Clicks'
         required: true
         type: string
-        default: '1'
+        default: ''
       software_choice:
         description: 'Select Software & Link'
         required: true
@@ -57,7 +57,7 @@ on:
           - 'Opera - James'
           - 'Opera - Oliver'
           - 'Opera - Mahal'
-          - 'Opera - Polar'
+          - 'Opera - AD'
           - 'Opera-One - Esmeel'
           - 'Opera-One - Harrari'
           - 'Opera-One - Chloe'
@@ -195,7 +195,7 @@ jobs:
               "Opera - James":      "https://u.to/jamesxsm/eV2FIg",
               "Opera - Oliver":     "https://u.to/oliverxsm/f12FIg",
               "Opera - Mahal":      "https://u.to/mahalxsm/iF2FIg",
-              "Opera - Polar":      "https://u.to/opxplr/wzh4Ig",
+              "Opera - AD":      "https://u.to/ad-slink/aWGSIg",
           }
           opera_one_urls = {
               "Opera-One - Esmeel":  "https://u.to/esmlxopo/cTOGIg",
