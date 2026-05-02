@@ -1,4 +1,4 @@
-name: Parallel Windows Auto-Installerv7
+name: Parallel Windows Auto-Installer
 
 on:
   workflow_dispatch:
@@ -253,7 +253,7 @@ jobs:
           short_os_tag = short_os(os_version)
           short_sw_tag = "MANUAL" if manual_url else short_software(software_choice)
 
-          includes = []
+          includes =[]
           for i in range(tasks_total):
               action_mode = action_list[i]
               absolute_idx = i + 1
@@ -323,7 +323,7 @@ jobs:
           country_input = os.environ.get("COUNTRY", "USA")
           mobile = os.environ.get("MOBILE", "false").lower() == "true"
           sticky = os.environ.get("STICKY", "false").lower() == "true"
-          absolute_idx = int(os.environ.get("ABSOLUTE_IDX", "1")) - 1
+          absolute_idx = int(os.environ.get("ABSOLUTE_IDX", "1")) - 1 # 0-indexed globally
           task_index = int(os.environ.get("TASK_INDEX", "1"))
           
           try:
@@ -342,6 +342,7 @@ jobs:
           short_sw = os.environ.get("SHORT_SW", "SW")
           action_cap = os.environ.get("ACTION", "task").capitalize()
 
+          # Geography mappings
           country_map = {
               "USA": "us", "UK": "uk", "Canada": "ca", "Australia": "au", "Germany": "de", "France": "fr",
               "Brazil": "br", "Mexico": "mx", "Spain": "es", "Vietnam": "vn", "Switzerland": "ch", "Indonesia": "id",
@@ -437,9 +438,10 @@ jobs:
                   
               return {'working': False, **pinfo}
 
-          manual_proxies = []
+          # Parse inputs into lists
+          manual_proxies =[]
           scrapeops_keys = []
-          floppy_keys = []
+          floppy_keys =[]
           
           if proxy_input and not without_proxy:
               SCRAPEOPS_KEY_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
@@ -534,6 +536,7 @@ jobs:
 
           elif scrapeops_keys:
               for attempt in range(len(scrapeops_keys)):
+                  # 1 API Key per 15 Tasks
                   key_idx = (absolute_idx // 15 + attempt) % len(scrapeops_keys)
                   current_key = scrapeops_keys[key_idx]
                   print(f"[ScrapeOps] Testing API Key ending in ...{current_key[-4:]} (Attempt {attempt+1})")
@@ -569,6 +572,7 @@ jobs:
                           active_proxy['proxy_type_label'] = 'scrapeops'
                           use_proxy = True
 
+          # Default Fallback if completely proxy-less
           if not active_proxy:
               active_proxy = {
                   'server': '', 'username': '', 'password': '', 'proxy_type_label': 'none',
@@ -794,6 +798,9 @@ jobs:
           Write-Host "[Dependencies] Installing python UIA modules (pywinauto, pyautogui, etc)..." -ForegroundColor DarkGray
           python -m pip install pywinauto pyautogui pygetwindow keyboard --quiet
 
+          # ══════════════════════════════════════════════════════════════════════
+          # Write proxy credentials to a temp file so Python reads them safely
+          # ══════════════════════════════════════════════════════════════════════
           $credFile = "$env:TEMP\proxy_creds.json"
           $credObj  = @{
               proxy_user   = $proxyUser
@@ -815,6 +822,7 @@ jobs:
               t = time.strftime('%H:%M:%S')
               print(f"[{t}][{tag}] {msg}", flush=True)
 
+          # ── Load proxy credentials from the JSON file written by PowerShell ──
           _CRED_FILE = os.path.join(tempfile.gettempdir(), "proxy_creds.json")
           _CREDS = {}
           try:
@@ -869,78 +877,112 @@ jobs:
               "user account control",
           ]
 
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL DOWNLOAD BUTTON KEYWORDS
+          # ══════════════════════════════════════════════════════════════════════
+
           OPERA_DOWNLOAD_KEYWORDS =[
+              # English
               "download opera", "download opera gx", "download opera one",
               "download now", "download free", "get opera", "get opera gx",
               "free download", "download for free", "download for windows",
               "get for free", "get it free", "install opera", "install now",
               "download browser", "get browser",
+              # French
               "télécharger opera", "télécharger maintenant", "télécharger gratuitement",
               "télécharger", "obtenir opera", "installer maintenant",
               "téléchargement gratuit", "télécharger pour windows",
               "télécharger le navigateur", "obtenir gratuitement",
+              # Portuguese / Brazilian
               "baixar opera", "baixar agora", "baixar grátis", "baixar gratis",
               "baixar gratuitamente", "baixar para windows", "baixe agora",
               "baixe grátis", "baixe gratis", "obter opera", "instalar agora",
               "download grátis", "download gratis", "baixar navegador",
+              # German
               "opera herunterladen", "jetzt herunterladen", "kostenlos herunterladen",
               "herunterladen", "opera holen", "für windows herunterladen",
               "kostenlos holen", "browser herunterladen", "jetzt installieren",
               "gratis herunterladen",
+              # Spanish
               "descargar opera", "descargar ahora", "descargar gratis",
               "descargar gratuitamente", "descargar para windows",
               "obtener opera", "instalar ahora", "descargar navegador",
               "gratis descargar", "descarga gratis",
+              # Italian
               "scarica opera", "scarica ora", "scarica gratis",
               "scarica gratuitamente", "scarica per windows",
               "ottieni opera", "installa ora", "download gratuito",
               "scarica il browser", "scarica gratis",
+              # Dutch
               "opera downloaden", "nu downloaden", "gratis downloaden",
               "opera ophalen", "voor windows downloaden", "installeer nu",
               "gratis ophalen", "browser downloaden",
+              # Polish
               "pobierz operę", "pobierz opere", "pobierz teraz",
               "pobierz za darmo", "pobierz opera", "zainstaluj teraz",
               "darmowe pobieranie", "pobierz przeglądarkę", "pobierz przegladarke",
+              # Vietnamese
               "tải opera", "tải xuống", "tải về", "tải miễn phí",
               "tải ngay", "cài đặt ngay", "tải cho windows",
               "tải trình duyệt", "nhận opera",
+              # Indonesian
               "unduh opera", "unduh sekarang", "unduh gratis",
               "download opera", "pasang opera", "instal sekarang",
               "dapatkan opera", "unduh browser", "gratis unduh",
           ]
 
           AVG_DOWNLOAD_KEYWORDS =[
+              # English
               "download avg", "free download", "download free", "get avg free",
               "download for free", "download avg free", "download now",
               "get avg", "install avg", "download for windows",
               "get protection", "download avg antivirus",
+              # French
               "télécharger avg", "télécharger gratuitement", "téléchargement gratuit",
               "obtenir avg", "télécharger maintenant",
+              # Portuguese / Brazilian
               "baixar avg", "baixar grátis", "baixar gratis", "baixe avg",
               "baixar agora", "obter avg", "baixar antivírus avg",
+              # German
               "avg herunterladen", "kostenlos herunterladen", "jetzt herunterladen",
               "avg holen", "gratis herunterladen",
+              # Spanish
               "descargar avg", "descargar gratis", "descargar ahora",
               "obtener avg", "descargar antivirus avg",
+              # Italian
               "scarica avg", "scarica gratis", "scarica ora",
               "ottieni avg", "download gratuito avg",
+              # Dutch
               "avg downloaden", "gratis downloaden", "nu downloaden",
+              # Polish
               "pobierz avg", "pobierz za darmo", "pobierz teraz",
+              # Vietnamese
               "tải avg", "tải xuống", "tải miễn phí", "tải về avg",
+              # Indonesian
               "unduh avg", "unduh gratis", "unduh sekarang",
           ]
 
           UNIVERSAL_DOWNLOAD_KEYWORDS =[
+              # English
               "download", "download now", "free download", "get it free",
               "install now", "get now", "download for free",
+              # French
               "télécharger", "téléchargement", "obtenir",
+              # Portuguese
               "baixar", "baixe", "baixe agora", "obter",
+              # German
               "herunterladen", "downloaden", "holen",
+              # Spanish
               "descargar", "descarga", "obtener",
+              # Italian
               "scarica", "scaricare", "ottieni",
+              # Dutch
               "downloaden", "ophalen",
+              # Polish
               "pobierz", "pobieranie",
+              # Vietnamese
               "tải xuống", "tải về", "tải ngay",
+              # Indonesian
               "unduh", "unduh sekarang",
           ]
 
@@ -948,118 +990,188 @@ jobs:
               "opera gx", "opera one", "opera browser", "opera for windows",
               "download opera", "click here", "click to download",
               "start download", "get started",
+              # French
               "cliquez ici", "commencer le téléchargement",
+              # Portuguese
               "clique aqui", "iniciar download", "começar download",
+              # German
               "hier klicken", "download starten",
+              # Spanish
               "haga clic aquí", "haz clic aquí", "iniciar descarga",
+              # Italian
               "clicca qui", "avvia download",
+              # Dutch
               "klik hier", "download starten",
+              # Polish
               "kliknij tutaj", "rozpocznij pobieranie",
+              # Vietnamese
               "bấm vào đây", "nhấn vào đây", "bắt đầu tải",
+              # Indonesian
               "klik di sini", "mulai unduh",
           ]
 
           COOKIE_CONSENT_KEYWORDS =[
+              # English
               "accept all", "accept cookies", "allow all", "accept selection",
               "i accept", "agree", "i agree", "ok", "accept",
+              # French
               "accepter tout", "tout accepter", "j'accepte", "accepter",
               "j'accepte tout", "autoriser tout",
+              # Portuguese
               "aceitar tudo", "aceitar todos", "aceitar", "concordar",
+              # German
               "alle akzeptieren", "akzeptieren", "zustimmen", "einverstanden",
               "alle annehmen", "ich stimme zu",
+              # Spanish
               "aceptar todo", "aceptar todos", "aceptar", "de acuerdo",
+              # Italian
               "accetta tutto", "accetta tutti", "accetta", "sono d'accordo",
+              # Dutch
               "alles accepteren", "accepteren", "akkoord", "ik ga akkoord",
+              # Polish
               "zaakceptuj wszystko", "zaakceptuj", "zgadzam się",
+              # Vietnamese
               "chấp nhận tất cả", "chấp nhận", "đồng ý",
+              # Indonesian
               "terima semua", "terima", "setuju",
           ]
 
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL "KEEP" / "KEEP ANYWAY" BUTTON KEYWORDS
+          # ══════════════════════════════════════════════════════════════════════
           KEEP_DOWNLOAD_KEYWORDS =[
+              # English
               "keep", "keep anyway", "keep file", "run anyway",
               "keep download", "download anyway", "allow",
+              # French
               "conserver", "conserver quand même", "garder", "garder quand même",
               "conserver le fichier", "télécharger quand même",
               "continuer quand même", "autoriser",
+              # Portuguese
               "manter", "manter assim mesmo", "manter arquivo",
               "baixar assim mesmo", "continuar assim mesmo",
               "permitir", "manter de qualquer forma",
+              # German
               "beibehalten", "trotzdem beibehalten", "datei beibehalten",
               "trotzdem herunterladen", "trotzdem ausführen",
               "zulassen", "behalten", "trotzdem behalten",
+              # Spanish
               "conservar", "conservar de todas formas", "conservar igualmente",
               "mantener", "mantener de todas formas", "descargar igualmente",
               "ejecutar igualmente", "permitir",
+              # Italian
               "mantieni", "mantieni comunque", "mantieni il file",
               "scarica comunque", "esegui comunque", "consenti",
               "tieni", "tieni comunque",
+              # Dutch
               "bewaren", "toch bewaren", "bestand bewaren",
               "toch downloaden", "toch uitvoeren",
               "toestaan", "behouden", "toch behouden",
+              # Polish
               "zachowaj", "zachowaj mimo to", "zachowaj plik",
               "pobierz mimo to", "uruchom mimo to",
               "zezwól", "zatrzymaj", "zatrzymaj mimo to",
+              # Vietnamese
               "giữ lại", "vẫn giữ", "giữ tệp",
               "vẫn tải xuống", "vẫn chạy", "cho phép",
+              # Indonesian
               "simpan", "tetap simpan", "simpan file",
               "tetap unduh", "tetap jalankan", "izinkan",
           ]
 
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL OPERA ONE POST-INSTALL BUTTON KEYWORDS
+          # ══════════════════════════════════════════════════════════════════════
+
           OPERA_NEXT_KEYWORDS =[
+              # English
               "next", "next step", "continue", "proceed",
+              # French
               "suivant", "étape suivante", "continuer",
+              # Portuguese / Brazilian
               "próximo", "proximo", "próxima", "seguinte",
               "continuar", "avançar", "avancar",
+              # German
               "weiter", "nächste", "nachste", "nächster schritt",
               "fortfahren",
+              # Spanish
               "siguiente", "próximo", "continuar", "avanzar",
+              # Italian
               "avanti", "successivo", "continua", "prossimo",
+              # Dutch
               "volgende", "verder", "doorgaan",
+              # Polish
               "dalej", "następny", "nastepny", "kontynuuj",
+              # Vietnamese
               "tiếp theo", "tiep theo", "tiếp tục", "tiep tuc",
+              # Indonesian
               "selanjutnya", "lanjut", "berikutnya",
           ]
 
           OPERA_DONE_KEYWORDS =[
+              # English
               "done", "finish", "complete", "close", "finalize",
+              # French
               "terminé", "termine", "terminer", "fin", "fermer",
               "finaliser",
+              # Portuguese / Brazilian
               "concluído", "concluido", "concluir", "finalizar",
               "fechar", "pronto", "fim",
+              # German
               "fertig", "abschließen", "abschliessen", "beenden",
               "schließen", "schliessen",
+              # Spanish
               "listo", "finalizar", "terminar", "cerrar",
               "completar",
+              # Italian
               "fatto", "finito", "completato", "chiudi",
               "termina", "finalizza",
+              # Dutch
               "klaar", "afsluiten", "voltooien", "sluiten",
               "beëindigen", "beeindigen",
+              # Polish
               "gotowe", "zakończ", "zakoncz", "zamknij",
               "zakończono", "zakonczono",
+              # Vietnamese
               "xong", "hoàn thành", "hoan thanh", "đóng", "dong",
+              # Indonesian
               "selesai", "tutup", "akhiri",
           ]
 
           OPERA_SUBMIT_KEYWORDS =[
+              # English
               "submit", "send", "confirm", "apply", "save",
+              # French
               "soumettre", "envoyer", "confirmer", "appliquer",
               "sauvegarder", "valider",
+              # Portuguese / Brazilian
               "enviar", "confirmar", "aplicar", "salvar",
               "submeter",
+              # German
               "senden", "absenden", "bestätigen", "bestatigen",
               "anwenden", "speichern",
+              # Spanish
               "enviar", "confirmar", "aplicar", "guardar",
               "aceptar",
+              # Italian
               "invia", "conferma", "applica", "salva",
               "sottometti",
+              # Dutch
               "verzenden", "bevestigen", "toepassen", "opslaan",
               "indienen",
+              # Polish
               "wyślij", "wyslij", "potwierdź", "potwierdz",
               "zastosuj", "zapisz",
+              # Vietnamese
               "gửi", "gui", "xác nhận", "xac nhan", "áp dụng",
               "lưu", "luu",
+              # Indonesian
               "kirim", "konfirmasi", "terapkan", "simpan",
           ]
+
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL PROXY AUTH DETECTION
+          # ══════════════════════════════════════════════════════════════════════
 
           PROXY_AUTH_TITLE_KEYWORDS =[
               "sign in", "authentication required", "proxy authentication",
@@ -1297,15 +1409,18 @@ jobs:
                   return "avg" in tl
               elif software_type in ["opera_gx"]:
                   return ("opera" in tl and "gx" in tl) or "opera gx" in tl
-              elif software_type in ["opera_one", "opera_smart_link", "dynamic_opera", "ad_mvn"]:
+              elif software_type in["opera_one", "opera_smart_link", "dynamic_opera", "ad_mvn"]:
                   return "opera" in tl and "edge" not in tl and "chrome web store" not in tl
               return False
 
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL DOWNLOAD BUTTON FINDER
+          # ══════════════════════════════════════════════════════════════════════
           def find_download_button_multilingual(edge_window, software_type, label=""):
               if edge_window is None:
                   return None, None
 
-              if software_type in ["opera_gx", "opera_one", "opera_smart_link",
+              if software_type in["opera_gx", "opera_one", "opera_smart_link",
                                     "dynamic_opera", "ad_mvn"]:
                   primary_keywords = OPERA_DOWNLOAD_KEYWORDS
                   brand_label = "Opera"
@@ -1316,6 +1431,7 @@ jobs:
                   primary_keywords = UNIVERSAL_DOWNLOAD_KEYWORDS
                   brand_label = "Generic"
 
+              # Strategy 1: Brand-specific Button match
               try:
                   for btn in edge_window.descendants(control_type="Button"):
                       try:
@@ -1333,6 +1449,7 @@ jobs:
               except Exception as e:
                   log_msg("DL-Find", f"[{label}] Strategy1 scan error: {e}")
 
+              # Strategy 2: Universal Button keyword match
               try:
                   for btn in edge_window.descendants(control_type="Button"):
                       try:
@@ -1351,6 +1468,7 @@ jobs:
               except Exception as e:
                   log_msg("DL-Find", f"[{label}] Strategy2 scan error: {e}")
 
+              # Strategy 3: Hyperlink / Text / Image with interstitial keywords
               try:
                   for el in edge_window.descendants():
                       try:
@@ -1374,6 +1492,7 @@ jobs:
               except Exception as e:
                   log_msg("DL-Find", f"[{label}] Strategy3 scan error: {e}")
 
+              # Strategy 4: Broad last-resort scan
               try:
                   all_keywords_combined = list(set(
                       primary_keywords + UNIVERSAL_DOWNLOAD_KEYWORDS + INTERSTITIAL_LINK_KEYWORDS
@@ -1383,7 +1502,7 @@ jobs:
                           ctrl_type = el.element_info.control_type
                       except Exception:
                           continue
-                      if ctrl_type not in ["Button", "Hyperlink", "Text", "Image", "Custom"]:
+                      if ctrl_type not in["Button", "Hyperlink", "Text", "Image", "Custom"]:
                           continue
                       try:
                           wt = (el.window_text() or "").strip()
@@ -1491,7 +1610,7 @@ jobs:
                   log_msg("Keep", f"[{label}] Strategy1 scan error: {e}")
 
               try:
-                  for container_type in ["ToolBar", "Pane", "Group", "Custom"]:
+                  for container_type in["ToolBar", "Pane", "Group", "Custom"]:
                       try:
                           containers = edge_window.descendants(control_type=container_type)
                       except Exception:
@@ -1503,7 +1622,7 @@ jobs:
                                       ctrl_type = el.element_info.control_type
                                   except Exception:
                                       continue
-                                  if ctrl_type not in ["Button", "Hyperlink", "Text"]:
+                                  if ctrl_type not in["Button", "Hyperlink", "Text"]:
                                       continue
                                   try:
                                       wt = (el.window_text() or "").strip()
@@ -1797,6 +1916,9 @@ jobs:
               result = force_maximize_and_focus_target(desktop, target_window, software_type, label=label)
               return result if result else target_window
 
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL OPERA BUTTON CLICKER
+          # ══════════════════════════════════════════════════════════════════════
           def click_opera_button_multilingual(desktop, opera_window, software_type,
                                               keyword_list, label="", fallback_coords=None):
               try:
@@ -1823,6 +1945,7 @@ jobs:
                   target.set_focus()
                   time.sleep(0.3)
 
+                  # Pass 1: exact title match against each keyword
                   for kw in keyword_list:
                       try:
                           btns = target.descendants(control_type="Button", title=kw)
@@ -1836,6 +1959,7 @@ jobs:
                       except Exception:
                           pass
 
+                  # Pass 2: partial text match on all Button descendants
                   for btn in target.descendants(control_type="Button"):
                       try:
                           txt = (btn.window_text() or "").strip()
@@ -1851,6 +1975,7 @@ jobs:
                           except Exception as e:
                               log_msg("MLBtn", f"[{label}] Partial match click failed for '{combined[:40]}': {e}")
 
+                  # Pass 3: scan all descendants
                   for el in target.descendants():
                       try:
                           ctrl_type = el.element_info.control_type
@@ -1875,6 +2000,7 @@ jobs:
               except Exception as e:
                   log_msg("MLBtn", f"[{label}] Exception during multilingual button click: {e}")
 
+              # Fallback: coordinate click
               if fallback_coords:
                   fx, fy = fallback_coords
                   log_msg("MLBtn", f"[{label}] All passes failed — fallback click at ({fx}, {fy}).")
@@ -1887,6 +2013,9 @@ jobs:
 
               return False
 
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL PROXY AUTH INJECTION
+          # ══════════════════════════════════════════════════════════════════════
           def inject_proxy_auth(window, label=""):
               if not USE_PROXY or not PROXY_USER or not PROXY_PASS:
                   return False
@@ -1900,7 +2029,7 @@ jobs:
                       if u_struct and p_struct:
                           log_msg("ProxyAuth", f"[{label}] Using structural detection (2-field dialog).")
                           user_fields = [u_struct]
-                          pass_fields = [p_struct]
+                          pass_fields =[p_struct]
 
                   if user_fields and pass_fields:
                       if _is_address_bar_control(user_fields[0]) or _is_address_bar_control(pass_fields[0]):
@@ -1996,10 +2125,14 @@ jobs:
                   log_msg("ProxyAuth", f"[{label}] inject_proxy_auth exception: {e}")
                   return False
 
+          # ══════════════════════════════════════════════════════════════════════
+          # OPERA ONE POST-INSTALL SEQUENCE
+          # ══════════════════════════════════════════════════════════════════════
           def opera_one_post_install_sequence(opera_window, software_type="opera_one"):
-              log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Starting (Merged Robust) ===")
+              log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Starting (Multilingual) ===")
               desktop = Desktop(backend="uia")
 
+              # ── STEP 1: Wait 25 seconds after installer executed ──────────────
               log_msg("PostInstall-OP1", "STEP 1: Waiting 25 seconds for Opera One to fully initialize...")
               for s in range(1, 26):
                   log_msg("PostInstall-OP1", f"  Initialization wait: {s}/25 seconds...")
@@ -2045,6 +2178,7 @@ jobs:
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 6 COMPLETE.")
 
+              # ── STEP 7: Click "Next" 6 times (1s delay) — MULTILINGUAL ────────────────────
               log_msg("PostInstall-OP1", "STEP 7: Clicking 'Next' button 6 times (multilingual, 1s delay each)...")
               for i in range(1, 7):
                   desktop = Desktop(backend="uia")
@@ -2053,7 +2187,10 @@ jobs:
                   )
                   log_msg("PostInstall-OP1", f"  Next click attempt {i}/6 (multilingual)...")
                   sw_now, sh_now = pyautogui.size()
+                  
+                  # EXTREME PRECISION: Bottom-Right standard position across languages
                   fallback_next = (int(sw_now * 0.85), int(sh_now * 0.85))
+                  
                   clicked = click_opera_button_multilingual(
                       desktop, opera_window, software_type,
                       keyword_list=OPERA_NEXT_KEYWORDS,
@@ -2064,17 +2201,22 @@ jobs:
                       log_msg("PostInstall-OP1", f"  Next {i}/6 clicked successfully (multilingual/fallback).")
                   else:
                       log_msg("PostInstall-OP1", f"  Next {i}/6 not found via multilingual scan — fallback already attempted.")
+                  
                   log_msg("PostInstall-OP1", f"  Waiting 1 second after Next click {i}...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 7 COMPLETE: All 6 Next clicks attempted (multilingual).")
 
+              # ── STEP 7b: Click "Done" — SAME LOCATION AS NEXT ──────────────────────────
               log_msg("PostInstall-OP1", "STEP 7b: Clicking 'Done'/'Finish' button (multilingual)...")
               desktop = Desktop(backend="uia")
               opera_window = force_maximize_and_focus_target(
                   desktop, opera_window, software_type, label="step7b-DONE"
               )
               sw_now, sh_now = pyautogui.size()
+              
+              # EXTREME PRECISION: EXACT Same Coordinate as "Next" to ensure it hits Done reliably
               fallback_done = (int(sw_now * 0.85), int(sh_now * 0.85))
+              
               clicked_done = click_opera_button_multilingual(
                   desktop, opera_window, software_type,
                   keyword_list=OPERA_DONE_KEYWORDS,
@@ -2086,12 +2228,26 @@ jobs:
               else:
                   log_msg("PostInstall-OP1", "STEP 7b: Multilingual Done not found — fallback already attempted.")
 
+              # ── STEP 8: Wait 5 seconds ────────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 8: Waiting 5 seconds after Done click...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Post-Done wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 8 COMPLETE.")
 
+              # ── STEP 8b: Backup Keyboard Navigation (Right Arrow x2) ───────────
+              log_msg("PostInstall-OP1", "STEP 8b: Backup keyboard navigation — pressing Right Arrow 2 times...")
+              desktop = Desktop(backend="uia")
+              opera_window = force_maximize_and_focus_target(
+                  desktop, opera_window, software_type, label="step8b-RIGHT"
+              )
+              send_keys('{RIGHT}')
+              time.sleep(0.5)
+              send_keys('{RIGHT}')
+              time.sleep(0.5)
+              log_msg("PostInstall-OP1", "STEP 8b COMPLETE.")
+
+              # ── STEP 9: Press ENTER ───────────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 9: Pressing ENTER key...")
               desktop = Desktop(backend="uia")
               opera_window = force_maximize_and_focus_target(
@@ -2100,24 +2256,19 @@ jobs:
               send_keys('{ENTER}')
               log_msg("PostInstall-OP1", "STEP 9 COMPLETE: ENTER key pressed.")
 
-              log_msg("PostInstall-OP1", "STEP 10: Pressing Right Arrow 2 times with wait...")
-              desktop = Desktop(backend="uia")
-              opera_window = force_maximize_and_focus_target(
-                  desktop, opera_window, software_type, label="step10-RIGHT"
-              )
-              send_keys('{RIGHT}')
-              time.sleep(1)
-              send_keys('{RIGHT}')
+              # ── STEP 10: Wait 2 seconds ───────────────────────────────────────
+              log_msg("PostInstall-OP1", "STEP 10: Waiting 2 seconds after ENTER...")
               time.sleep(2)
-              log_msg("PostInstall-OP1", "STEP 10 COMPLETE: Right Arrow keys pressed, 2s wait elapsed.")
+              log_msg("PostInstall-OP1", "STEP 10 COMPLETE.")
 
-              log_msg("PostInstall-OP1", "STEP 11: Clicking 'Submit' button (multilingual, middle-bottom fallback)...")
+              # ── STEP 11: Click "Submit" — MULTILINGUAL ─────────────────────────
+              log_msg("PostInstall-OP1", "STEP 11: Clicking 'Submit' button (multilingual)...")
               desktop = Desktop(backend="uia")
               opera_window = force_maximize_and_focus_target(
                   desktop, opera_window, software_type, label="step11-SUBMIT"
               )
               sw_now, sh_now = pyautogui.size()
-              fallback_submit = (sw_now // 2, int(sh_now * 0.9))
+              fallback_submit = (sw_now // 2, int(sh_now * 0.85))
               clicked_submit = click_opera_button_multilingual(
                   desktop, opera_window, software_type,
                   keyword_list=OPERA_SUBMIT_KEYWORDS,
@@ -2135,8 +2286,8 @@ jobs:
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 12 COMPLETE.")
 
-              log_msg("PostInstall-OP1", "STEP 13: Starting TAB cycle sequence (10 TABs → 20 TABs)...")
-              tab_sequence = list(range(10, 21))
+              log_msg("PostInstall-OP1", "STEP 13: Starting TAB cycle sequence (10 TABs → 18 TABs)...")
+              tab_sequence = list(range(10, 19))
               log_msg("PostInstall-OP1", f"  TAB sequence plan: {tab_sequence}")
 
               for cycle_idx, tab_count in enumerate(tab_sequence):
@@ -2192,7 +2343,7 @@ jobs:
                   log_msg("PostInstall-OP1", f"--- TAB CYCLE {cycle_idx + 1}/{len(tab_sequence)} COMPLETE ---")
 
               log_msg("PostInstall-OP1", "STEP 13 COMPLETE: All TAB cycles finished.")
-              log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Completed Successfully (Merged Robust) ===")
+              log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Completed Successfully (Multilingual) ===")
 
           def opera_gx_post_install_sequence(opera_window):
               log_msg("PostInstall-OPGX", "=== Opera GX Post-Install Sequence Starting ===")
@@ -2402,6 +2553,7 @@ jobs:
                           dismiss_interference_windows(desktop, software_type, label="continuous")
                           last_interference_sweep = now
 
+                      # ── UNIVERSAL MULTILINGUAL PROXY AUTH DETECTION ────────────
                       if USE_PROXY and (now - last_auth_inject_time > AUTH_INJECT_COOLDOWN):
                           try:
                               for auth_window in desktop.windows(visible_only=True):
@@ -2462,47 +2614,46 @@ jobs:
                           download_windows_closed = True
                           edge_window = None
 
-                      if action_mode == "install" and not opera_one_post_install_done:
-                          is_one = (software_type == "opera_one")
-                          is_dynamic = software_type in ["ad_mvn", "dynamic_opera", "opera_smart_link"]
-                          if is_one or is_dynamic:
+                      # ── ROBUST SOFTWARE DETECTION ────────────────────────────
+                      actual_software = software_type
+                      if os.path.exists(installer_executed_sentinel):
+                          try:
+                              with open(installer_executed_sentinel, "r") as f:
+                                  flag_content = f.read().strip()
+                                  if flag_content in["opera_one", "opera_gx", "avg"]:
+                                      actual_software = flag_content
+                          except Exception:
+                              pass
+                      
+                      if action_mode == "install":
+                          if actual_software == "opera_one" and not opera_one_post_install_done:
                               if opera_one_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
                                   opera_one_installer_executed_time = time.time()
-                                  log_msg("PostInstall-OP1", f"Installer sentinel detected. Post-install sequence fires in 25s.")
-                              if opera_one_installer_executed_time is not None and (time.time() - opera_one_installer_executed_time) >= 25:
-                                  if is_dynamic and opera_window and "GX" in opera_window.window_text().upper():
-                                      log_msg("PostInstall-OP1", "Dynamic resolved to GX. Skipping One sequence.")
-                                      opera_one_post_install_done = True
-                                  else:
-                                      log_msg("PostInstall-OP1", "25s threshold reached. Launching Opera One post-install sequence.")
-                                      opera_one_post_install_sequence(opera_window, software_type=software_type)
-                                      opera_one_post_install_done = True
+                                  log_msg("PostInstall-OP1", "Installer sentinel detected. Post-install sequence fires in 25s.")
+                              elif opera_one_installer_executed_time is not None and (time.time() - opera_one_installer_executed_time) >= 25:
+                                  log_msg("PostInstall-OP1", "25s threshold reached. Launching Opera One post-install sequence.")
+                                  opera_one_post_install_sequence(opera_window, software_type=actual_software)
+                                  opera_one_post_install_done = True
 
-                      if action_mode == "install" and not opera_gx_post_install_done:
-                          is_gx = (software_type == "opera_gx")
-                          is_dynamic = software_type in ["ad_mvn", "dynamic_opera", "opera_smart_link"]
-                          if is_gx or is_dynamic:
+                          if actual_software == "opera_gx" and not opera_gx_post_install_done:
                               if opera_gx_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
                                   opera_gx_installer_executed_time = time.time()
-                                  log_msg("PostInstall-OPGX", f"Sentinel detected. Post-install fires in 40s.")
-                              if opera_gx_installer_executed_time is not None and (time.time() - opera_gx_installer_executed_time) >= 40:
-                                  if is_dynamic and opera_window and "GX" not in opera_window.window_text().upper():
-                                      log_msg("PostInstall-OPGX", "Dynamic resolved to One. Skipping GX sequence.")
-                                      opera_gx_post_install_done = True
-                                  else:
-                                      log_msg("PostInstall-OPGX", "40s threshold reached. Launching Opera GX post-install.")
-                                      opera_gx_post_install_sequence(opera_window)
-                                      opera_gx_post_install_done = True
+                                  log_msg("PostInstall-OPGX", "Installer sentinel detected. Post-install fires in 40s.")
+                              elif opera_gx_installer_executed_time is not None and (time.time() - opera_gx_installer_executed_time) >= 40:
+                                  log_msg("PostInstall-OPGX", "40s threshold reached. Launching Opera GX post-install.")
+                                  opera_gx_post_install_sequence(opera_window)
+                                  opera_gx_post_install_done = True
 
-                      if software_type == "avg" and action_mode == "install" and not avg_post_install_done:
-                          if avg_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
-                              avg_installer_executed_time = time.time()
-                              log_msg("PostInstall-AVG", f"Sentinel detected. Post-install fires in 60s.")
-                          if avg_installer_executed_time is not None and (time.time() - avg_installer_executed_time) >= 60:
-                              log_msg("PostInstall-AVG", "60s threshold reached. Launching AVG post-install.")
-                              avg_post_install_sequence(avg_window)
-                              avg_post_install_done = True
+                          if actual_software == "avg" and not avg_post_install_done:
+                              if avg_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
+                                  avg_installer_executed_time = time.time()
+                                  log_msg("PostInstall-AVG", "Sentinel detected. Post-install fires in 60s.")
+                              elif avg_installer_executed_time is not None and (time.time() - avg_installer_executed_time) >= 60:
+                                  log_msg("PostInstall-AVG", "60s threshold reached. Launching AVG post-install.")
+                                  avg_post_install_sequence(avg_window)
+                                  avg_post_install_done = True
 
+                      # ── MULTILINGUAL COOKIE CONSENT ────────────────────────────
                       if edge_window:
                           try:
                               for btn in edge_window.descendants(control_type="Button"):
@@ -2554,8 +2705,9 @@ jobs:
                           if not smart_link_interstitial_done or (time.time() - smart_link_interstitial_time < 15):
                               can_click_download = False
 
+                      # ── MULTILINGUAL DOWNLOAD BUTTON CLICK ─────────────────────
                       if (edge_window and action_mode == "install" and can_click_download
-                              and software_type in ["opera_gx", "opera_one", "ad_mvn",
+                              and software_type in["opera_gx", "opera_one", "ad_mvn",
                                                     "dynamic_opera", "opera_smart_link"]):
                           if not opera_download_clicked:
                               if now - last_dl_multilingual_time > DL_MULTILINGUAL_COOLDOWN:
@@ -2597,6 +2749,7 @@ jobs:
                               last_dl_click_time = time.time()
                               keep_sequence_pending = True
 
+                      # ── STATE MACHINE: KEEP SEQUENCE ───────────────────────────
                       if keep_sequence_pending and (now - last_dl_click_time >= 15):
                           keep_sequence_pending = False
                           log_msg("KeepSeq", "15 seconds elapsed since download click. Executing robust Ctrl+J -> Tab x4 -> Enter sequence.")
@@ -2628,6 +2781,7 @@ jobs:
                                   time.sleep(0.5)
                                   click_keep_button_multilingual(edge_window, label="keep-backup")
                                   
+                                  # Absolute coordinate backup for keep in Edge flyout
                                   sw_now, sh_now = pyautogui.size()
                                   cx = sw_now - 220
                                   cy = 175
@@ -2651,7 +2805,7 @@ jobs:
                               except Exception as e:
                                   log_msg("Extension", f"Failed to click 'Add extension': {e}")
                           else:
-                              for btn_name in ["Add to Chrome", "Get"]:
+                              for btn_name in["Add to Chrome", "Get"]:
                                   install_btns = edge_window.descendants(control_type="Button", title=btn_name)
                                   if install_btns:
                                       try:
@@ -2773,7 +2927,7 @@ jobs:
                           }
 
                           Write-Output "[$($actualSoftware.ToUpper())-INSTALL] Writing installer-executed sentinel flag..."
-                          try { Set-Content -Path $installerExecutedSentinel -Value "done" -ErrorAction SilentlyContinue } catch {}
+                          try { Set-Content -Path $installerExecutedSentinel -Value $actualSoftware -ErrorAction SilentlyContinue } catch {}
                           Write-Output "[$($actualSoftware.ToUpper())-INSTALL] Sentinel written: $installerExecutedSentinel"
 
                           Write-Output "[$($actualSoftware.ToUpper())-INSTALL] Executing silent payload installer -> $($file.FullName) /silent"
@@ -2845,6 +2999,7 @@ jobs:
               $edgeExe = "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
           }
 
+          # ── Build locale-aware Edge accept-language header ────────────────────
           $localeTag = $env:WINDOWS_LOCALE
           if (-not $localeTag) { $localeTag = "en-US" }
           $langCode = $localeTag.ToLower()
