@@ -1622,7 +1622,7 @@ jobs:
                                       ctrl_type = el.element_info.control_type
                                   except Exception:
                                       continue
-                                  if ctrl_type not in ["Button", "Hyperlink", "Text"]:
+                                  if ctrl_type not in["Button", "Hyperlink", "Text"]:
                                       continue
                                   try:
                                       wt = (el.window_text() or "").strip()
@@ -1981,7 +1981,7 @@ jobs:
                           ctrl_type = el.element_info.control_type
                       except Exception:
                           continue
-                      if ctrl_type not in["Button", "Hyperlink", "Text", "Custom"]:
+                      if ctrl_type not in ["Button", "Hyperlink", "Text", "Custom"]:
                           continue
                       try:
                           txt = (el.window_text() or "").strip()
@@ -2132,6 +2132,7 @@ jobs:
               log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Starting (Multilingual) ===")
               desktop = Desktop(backend="uia")
 
+              # ── STEP 1: Wait 25 seconds after installer executed ──────────────
               log_msg("PostInstall-OP1", "STEP 1: Waiting 25 seconds for Opera One to fully initialize...")
               for s in range(1, 26):
                   log_msg("PostInstall-OP1", f"  Initialization wait: {s}/25 seconds...")
@@ -2255,19 +2256,21 @@ jobs:
               send_keys('{ENTER}')
               log_msg("PostInstall-OP1", "STEP 9 COMPLETE: ENTER key pressed.")
 
-              # ── STEP 10: Wait 2 seconds (Modified) ───────────────────────────────────────
+              # ── STEP 10: Wait 2 seconds ───────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 10: Waiting 2 seconds after ENTER...")
-              time.sleep(2)
+              for s in range(1, 3):
+                  log_msg("PostInstall-OP1", f"  Post-ENTER wait: {s}/2 seconds...")
+                  time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 10 COMPLETE.")
 
-              # ── STEP 11: Click "Submit" — MULTILINGUAL (Middle Bottom) ─────────────────────────
+              # ── STEP 11: Click "Submit" — MULTILINGUAL ─────────────────────────
               log_msg("PostInstall-OP1", "STEP 11: Clicking 'Submit' button (multilingual)...")
               desktop = Desktop(backend="uia")
               opera_window = force_maximize_and_focus_target(
                   desktop, opera_window, software_type, label="step11-SUBMIT"
               )
               sw_now, sh_now = pyautogui.size()
-              fallback_submit = (sw_now // 2, int(sh_now * 0.85))  # Middle bottom fallback
+              fallback_submit = (sw_now // 2, int(sh_now * 0.85))
               clicked_submit = click_opera_button_multilingual(
                   desktop, opera_window, software_type,
                   keyword_list=OPERA_SUBMIT_KEYWORDS,
@@ -2285,7 +2288,6 @@ jobs:
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 12 COMPLETE.")
 
-              # ── STEP 13: Tab cycle starting at 10 (Increased by 2) ────────────
               log_msg("PostInstall-OP1", "STEP 13: Starting TAB cycle sequence (10 TABs → 20 TABs)...")
               tab_sequence = list(range(10, 21))
               log_msg("PostInstall-OP1", f"  TAB sequence plan: {tab_sequence}")
@@ -2507,7 +2509,6 @@ jobs:
               smart_link_interstitial_done = False
               smart_link_interstitial_time = 0
 
-              # Opera One uses 25s threshold from installer execution
               opera_one_installer_executed_time = None
               opera_one_post_install_done = False
 
@@ -2615,7 +2616,6 @@ jobs:
                           download_windows_closed = True
                           edge_window = None
 
-                      # ── Opera One post-install (25s threshold from installer execution) ──
                       if action_mode == "install" and not opera_one_post_install_done:
                           is_one = (software_type == "opera_one")
                           is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
@@ -2632,7 +2632,6 @@ jobs:
                                       opera_one_post_install_sequence(opera_window, software_type=software_type)
                                       opera_one_post_install_done = True
 
-                      # ── Opera GX post-install (40s threshold from installer execution) ──
                       if action_mode == "install" and not opera_gx_post_install_done:
                           is_gx = (software_type == "opera_gx")
                           is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
@@ -2649,7 +2648,6 @@ jobs:
                                       opera_gx_post_install_sequence(opera_window)
                                       opera_gx_post_install_done = True
 
-                      # ── AVG post-install (60s threshold from installer execution) ──
                       if software_type == "avg" and action_mode == "install" and not avg_post_install_done:
                           if avg_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
                               avg_installer_executed_time = time.time()
@@ -2811,7 +2809,7 @@ jobs:
                               except Exception as e:
                                   log_msg("Extension", f"Failed to click 'Add extension': {e}")
                           else:
-                              for btn_name in["Add to Chrome", "Get"]:
+                              for btn_name in ["Add to Chrome", "Get"]:
                                   install_btns = edge_window.descendants(control_type="Button", title=btn_name)
                                   if install_btns:
                                       try:
