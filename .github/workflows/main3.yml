@@ -49,7 +49,7 @@ on:
           - '8'
           - '9'
           - '10'
-        default: '0'
+        default: '1'
       software_choice:
         description: 'Select Software & Link'
         required: true
@@ -89,7 +89,7 @@ on:
         description: 'ScrapeOps / FloppyData / Manual Proxies'
         required: false
         type: string
-        default: '5c97a76e-baa8-449d-817f-843a7ddf5b8d'
+        default: '1IFG1IFjMPZi4DcrQ16KF2ku_fbxeCXI'
       use_without_proxy:
         description: 'Run without proxy'
         required: true
