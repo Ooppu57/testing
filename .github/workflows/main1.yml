@@ -211,7 +211,7 @@ jobs:
               "Ad-MVN - A2Z":        "https://u.to/a2zadmvnxsmrt/Y-t7Ig",
           }
           all_urls = {**avg_urls, **opera_urls, **opera_one_urls, **ad_mvn_urls}
-          dynamic_links = ["Opera - Techx", "Opera - Fatradez", "Opera - James", "Opera - Oliver", "Opera - Mahal"]
+          dynamic_links =["Opera - Techx", "Opera - Fatradez", "Opera - James", "Opera - Oliver", "Opera - Mahal"]
 
           if manual_url:
               target_url = manual_url
@@ -253,7 +253,7 @@ jobs:
           short_os_tag = short_os(os_version)
           short_sw_tag = "MANUAL" if manual_url else short_software(software_choice)
 
-          includes = []
+          includes =[]
           for i in range(tasks_total):
               action_mode = action_list[i]
               absolute_idx = i + 1
@@ -351,42 +351,19 @@ jobs:
           cc_input = country_map.get(country_input, "us")
           
           fallback_tz_map = {
-              "US": "America/New_York", "GB": "Europe/London", "CA": "America/Toronto", "AU": "Australia/Sydney",
-              "DE": "Europe/Berlin", "FR": "Europe/Paris", "BR": "America/Sao_Paulo", "MX": "America/Mexico_City",
-              "ES": "Europe/Madrid", "VN": "Asia/Ho_Chi_Minh", "CH": "Europe/Zurich", "ID": "Asia/Jakarta",
-              "IT": "Europe/Rome", "NL": "Europe/Amsterdam", "PL": "Europe/Warsaw"
+              "US": "America/New_York", "GB": "Europe/London", "CA": "America/Toronto", "AU": "Australia/Sydney", "DE": "Europe/Berlin", "FR": "Europe/Paris", "BR": "America/Sao_Paulo", "MX": "America/Mexico_City", "ES": "Europe/Madrid", "VN": "Asia/Ho_Chi_Minh", "CH": "Europe/Zurich", "ID": "Asia/Jakarta", "IT": "Europe/Rome", "NL": "Europe/Amsterdam", "PL": "Europe/Warsaw"
           }
 
           def country_code_to_locale(cc):
-              _map = {
-                  "US": "en-US", "GB": "en-GB", "CA": "en-CA", "AU": "en-AU", "DE": "de-DE", "FR": "fr-FR",
-                  "BR": "pt-BR", "MX": "es-MX", "ES": "es-ES", "VN": "vi-VN", "CH": "de-CH", "ID": "id-ID",
-                  "IT": "it-IT", "NL": "nl-NL", "PL": "pl-PL"
-              }
+              _map = {"US": "en-US", "GB": "en-GB", "CA": "en-CA", "AU": "en-AU", "DE": "de-DE", "FR": "fr-FR", "BR": "pt-BR", "MX": "es-MX", "ES": "es-ES", "VN": "vi-VN", "CH": "de-CH", "ID": "id-ID", "IT": "it-IT", "NL": "nl-NL", "PL": "pl-PL"}
               return _map.get(cc.upper(), "en-US")
 
           def country_code_to_keyboard(cc):
-              _map = {
-                  "US": "0409:00000409", "GB": "0809:00000809", "CA": "1009:00000409", "AU": "0C09:00000409",
-                  "DE": "0407:00000407", "FR": "040C:0000040C", "BR": "0416:00000416", "MX": "080A:0000080A",
-                  "ES": "0C0A:0000080A", "VN": "042A:0000042A", "CH": "0807:00000807", "ID": "0421:00000409",
-                  "IT": "0410:00000410", "NL": "0413:00020409", "PL": "0415:00000415"
-              }
+              _map = {"US": "0409:00000409", "GB": "0809:00000809", "CA": "1009:00000409", "AU": "0C09:00000409", "DE": "0407:00000407", "FR": "040C:0000040C", "BR": "0416:00000416", "MX": "080A:0000080A", "ES": "0C0A:0000080A", "VN": "042A:0000042A", "CH": "0807:00000807", "ID": "0421:00000409", "IT": "0410:00000410", "NL": "0413:00020409", "PL": "0415:00000415"}
               return _map.get(cc.upper(), "0409:00000409")
 
           def tz_to_windows_tz(iana_tz):
-              _map = {
-                  "America/New_York": "Eastern Standard Time", "America/Chicago": "Central Standard Time",
-                  "America/Denver": "Mountain Standard Time", "America/Phoenix": "US Mountain Standard Time",
-                  "America/Los_Angeles": "Pacific Standard Time", "America/Toronto": "Eastern Standard Time",
-                  "America/Sao_Paulo": "E. South America Standard Time", "America/Mexico_City": "Central Standard Time (Mexico)",
-                  "Europe/London": "GMT Standard Time", "Europe/Paris": "Romance Standard Time",
-                  "Europe/Berlin": "W. Europe Standard Time", "Europe/Madrid": "Romance Standard Time",
-                  "Europe/Rome": "W. Europe Standard Time", "Europe/Amsterdam": "W. Europe Standard Time",
-                  "Europe/Warsaw": "Central European Standard Time", "Asia/Ho_Chi_Minh": "SE Asia Standard Time",
-                  "Europe/Zurich": "W. Europe Standard Time", "Asia/Jakarta": "SE Asia Standard Time",
-                  "Australia/Sydney": "AUS Eastern Standard Time"
-              }
+              _map = {"America/New_York": "Eastern Standard Time", "America/Chicago": "Central Standard Time", "America/Denver": "Mountain Standard Time", "America/Phoenix": "US Mountain Standard Time", "America/Los_Angeles": "Pacific Standard Time", "America/Toronto": "Eastern Standard Time", "America/Sao_Paulo": "E. South America Standard Time", "America/Mexico_City": "Central Standard Time (Mexico)", "Europe/London": "GMT Standard Time", "Europe/Paris": "Romance Standard Time", "Europe/Berlin": "W. Europe Standard Time", "Europe/Madrid": "Romance Standard Time", "Europe/Rome": "W. Europe Standard Time", "Europe/Amsterdam": "W. Europe Standard Time", "Europe/Warsaw": "Central European Standard Time", "Asia/Ho_Chi_Minh": "SE Asia Standard Time", "Europe/Zurich": "W. Europe Standard Time", "Asia/Jakarta": "SE Asia Standard Time", "Australia/Sydney": "AUS Eastern Standard Time"}
               return _map.get(iana_tz, "UTC")
 
           def parse_proxy(proxy_str):
@@ -403,30 +380,22 @@ jobs:
               if floppy_match:
                   user, pwd, host, port, country_extra = floppy_match.groups()
                   country = country_extra.split(' - ')[0].strip()
-                  return {'original': original, 'protocol': protocol, 'username': user, 'password': pwd,
-                          'host': host, 'port': int(port), 'server': f"{host}:{port}",
-                          'country_name': country, 'country_code': None, 'url': f"http://{user}:{pwd}@{host}:{port}"}
+                  return {'original': original, 'protocol': protocol, 'username': user, 'password': pwd, 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'country_name': country, 'country_code': None, 'url': f"http://{user}:{pwd}@{host}:{port}"}
 
               std_match = re.match(r'^([^:]+):([^@]+)@([^:]+):(\d+)$', rest)
               if std_match:
                   user, pwd, host, port = std_match.groups()
-                  return {'original': original, 'protocol': protocol, 'username': user, 'password': pwd,
-                          'host': host, 'port': int(port), 'server': f"{host}:{port}",
-                          'country_name': None, 'country_code': None, 'url': f"{protocol}://{user}:{pwd}@{host}:{port}"}
+                  return {'original': original, 'protocol': protocol, 'username': user, 'password': pwd, 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'country_name': None, 'country_code': None, 'url': f"{protocol}://{user}:{pwd}@{host}:{port}"}
 
               alt_match = re.match(r'^([^:]+):(\d+):([^:]+):(.+)$', rest)
               if alt_match:
                   host, port, user, pwd = alt_match.groups()
-                  return {'original': original, 'protocol': protocol, 'username': user, 'password': pwd,
-                          'host': host, 'port': int(port), 'server': f"{host}:{port}",
-                          'country_name': None, 'country_code': None, 'url': f"{protocol}://{user}:{pwd}@{host}:{port}"}
+                  return {'original': original, 'protocol': protocol, 'username': user, 'password': pwd, 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'country_name': None, 'country_code': None, 'url': f"{protocol}://{user}:{pwd}@{host}:{port}"}
 
               simple_match = re.match(r'^([^:]+):(\d+)$', rest)
               if simple_match:
                   host, port = simple_match.groups()
-                  return {'original': original, 'protocol': protocol, 'username': '', 'password': '',
-                          'host': host, 'port': int(port), 'server': f"{host}:{port}",
-                          'country_name': None, 'country_code': None, 'url': f"{protocol}://{host}:{port}"}
+                  return {'original': original, 'protocol': protocol, 'username': '', 'password': '', 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'country_name': None, 'country_code': None, 'url': f"{protocol}://{host}:{port}"}
 
               return None
 
@@ -441,10 +410,9 @@ jobs:
                           tz = data.get("timezone") or "UTC"
                           return {
                               **pinfo,
-                              'working': True, 'country_code': cc, 'country_name': data.get('region') or cc,
-                              'ip': data.get("ip") or 'unknown', 'city': data.get("city") or "",
-                              'region': data.get("region") or "", 'timezone_iana': tz,
-                              'timezone_windows': tz_to_windows_tz(tz), 'windows_locale': country_code_to_locale(cc),
+                              'working': True, 'country_code': cc, 'country_name': data.get('region') or cc, 'ip': data.get("ip") or 'unknown', 
+                              'city': data.get("city") or "", 'region': data.get("region") or "", 'timezone_iana': tz, 
+                              'timezone_windows': tz_to_windows_tz(tz), 'windows_locale': country_code_to_locale(cc), 
                               'windows_keyboard': country_code_to_keyboard(cc)
                           }
               except Exception as e:
@@ -460,10 +428,9 @@ jobs:
                           tz = data.get('timezone') or 'UTC'
                           return {
                               **pinfo,
-                              'working': True, 'country_code': cc, 'country_name': data.get('country') or cc,
-                              'ip': data.get('query') or 'unknown', 'city': data.get('city') or '',
-                              'region': data.get('regionName') or '', 'timezone_iana': tz,
-                              'timezone_windows': tz_to_windows_tz(tz), 'windows_locale': country_code_to_locale(cc),
+                              'working': True, 'country_code': cc, 'country_name': data.get('country') or cc, 'ip': data.get('query') or 'unknown',
+                              'city': data.get('city') or '', 'region': data.get('regionName') or '', 'timezone_iana': tz, 
+                              'timezone_windows': tz_to_windows_tz(tz), 'windows_locale': country_code_to_locale(cc), 
                               'windows_keyboard': country_code_to_keyboard(cc)
                           }
               except Exception as e:
@@ -472,9 +439,9 @@ jobs:
               return {'working': False, **pinfo}
 
           # Parse inputs into lists
-          manual_proxies = []
+          manual_proxies =[]
           scrapeops_keys = []
-          floppy_keys = []
+          floppy_keys =[]
           
           if proxy_input and not without_proxy:
               SCRAPEOPS_KEY_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
@@ -486,7 +453,7 @@ jobs:
                   if not item: continue
                   if '://' in item or '@' in item or item.count(':') >= 2:
                       manual_proxies.append(item)
-                  elif SCRAPEOPS_KEY_RE.match(item):
+                  elif SCRAPEOPS_KEY_RE.match(item): 
                       scrapeops_keys.append(item)
                   elif FLOPPY_KEY_RE.match(item):
                       floppy_keys.append(item)
@@ -504,7 +471,7 @@ jobs:
           elif manual_proxies:
               print(f"[Manual Proxy] Assigning proxies using stride distribution (Total Proxies Provided: {len(manual_proxies)}, Total Tasks: {tasks_total})...")
               
-              for attempt in range((len(manual_proxies) // max(1, tasks_total)) + 1):
+              for attempt in range( (len(manual_proxies) // max(1, tasks_total)) + 1 ):
                   idx = absolute_idx + (attempt * tasks_total)
                   if idx >= len(manual_proxies):
                       break
@@ -537,17 +504,14 @@ jobs:
                   print(f"[FloppyData] Testing API Key ending in ...{current_key[-4:]} (Attempt {attempt+1})")
                   
                   try:
-                      creds_resp = requests.get(f"{FLOPPY_BASE}/v1/rotating/smartParamsCredentials",
-                                                headers={"X-Api-Key": current_key}, timeout=12)
+                      creds_resp = requests.get(f"{FLOPPY_BASE}/v1/rotating/smartParamsCredentials", headers={"X-Api-Key": current_key}, timeout=12)
                       if creds_resp.status_code != 200: continue
                       creds_data = creds_resp.json()
                       
-                      params = {"type": proxy_type, "country": cc_input.upper(), "protocol": "http",
-                                "rotation": "0" if sticky else "-1"}
+                      params = {"type": proxy_type, "country": cc_input.upper(), "protocol": "http", "rotation": "0" if sticky else "-1"}
                       if sticky: params["session"] = f"t{task_index}_{str(uuid.uuid4())[:8]}"
                       
-                      builder_resp = requests.get(f"{FLOPPY_BASE}/v1/rotating/smartParamsBuilder",
-                                                  headers={"X-Api-Key": current_key}, params=params, timeout=12)
+                      builder_resp = requests.get(f"{FLOPPY_BASE}/v1/rotating/smartParamsBuilder", headers={"X-Api-Key": current_key}, params=params, timeout=12)
                       b_data = builder_resp.json()
                       
                       user = b_data.get("username", creds_data.get("username", ""))
@@ -583,7 +547,7 @@ jobs:
                   
                   pinfo = {
                       'username': proxy_user, 'password': current_key, 'host': 'residential-proxy.scrapeops.io',
-                      'port': 8181, 'server': 'residential-proxy.scrapeops.io:8181',
+                      'port': 8181, 'server': 'residential-proxy.scrapeops.io:8181', 
                       'url': f"http://{proxy_user}:{current_key}@residential-proxy.scrapeops.io:8181"
                   }
                   
@@ -602,10 +566,8 @@ jobs:
                           active_proxy = {
                               **pinfo,
                               'working': True, 'country_code': fallback_cc, 'country_name': country_input, 'ip': 'unknown',
-                              'city': '', 'region': '', 'timezone_iana': fallback_iana,
-                              'timezone_windows': tz_to_windows_tz(fallback_iana),
-                              'windows_locale': country_code_to_locale(fallback_cc),
-                              'windows_keyboard': country_code_to_keyboard(fallback_cc)
+                              'city': '', 'region': '', 'timezone_iana': fallback_iana, 'timezone_windows': tz_to_windows_tz(fallback_iana),
+                              'windows_locale': country_code_to_locale(fallback_cc), 'windows_keyboard': country_code_to_keyboard(fallback_cc)
                           }
                           active_proxy['proxy_type_label'] = 'scrapeops'
                           use_proxy = True
@@ -878,32 +840,48 @@ jobs:
           PROXY_TYPE   = _CREDS.get("proxy_type",   "none")
           USE_PROXY    = str(_CREDS.get("use_proxy", False)).lower() in ("true", "1", "yes")
 
-          DOWNLOAD_DONE_TITLES = [
+          DOWNLOAD_DONE_TITLES =[
               "Thanks for downloading Opera", "Thanks for downloadin",
               "Download | Thanks", "sudetyj", "clickWorker",
               "GET READY TO PLAY", "ready to install",
           ]
 
-          INTERFERENCE_TITLES = [
-              "Settings", "Windows Settings", "Default apps", "System Settings",
-              "Choose an app", "How do you want to open", "Open with",
-              "Windows PowerShell", "Administrator: Windows PowerShell",
-              "Command Prompt", "Administrator: Command Prompt", "cmd.exe",
-              "PowerShell", "Console Host", "Windows Terminal",
-              "Administrator: C:\\Program Files", "Administrator: C:\\Windows",
+          INTERFERENCE_TITLES =[
+              "Settings",
+              "Windows Settings",
+              "Default apps",
+              "System Settings",
+              "Choose an app",
+              "How do you want to open",
+              "Open with",
+              "Windows PowerShell",
+              "Administrator: Windows PowerShell",
+              "Command Prompt",
+              "Administrator: Command Prompt",
+              "cmd.exe",
+              "PowerShell",
+              "Console Host",
+              "Windows Terminal",
+              "Administrator: C:\\Program Files",
+              "Administrator: C:\\Windows",
               "User Account Control",
           ]
 
-          INTERFERENCE_SUBSTRINGS = [
-              "default apps", "choose a default", "set as default", "open with",
-              "how do you want to open", "administrator: c:\\", "user account control",
+          INTERFERENCE_SUBSTRINGS =[
+              "default apps",
+              "choose a default",
+              "set as default",
+              "open with",
+              "how do you want to open",
+              "administrator: c:\\",
+              "user account control",
           ]
 
           # ══════════════════════════════════════════════════════════════════════
           # MULTILINGUAL DOWNLOAD BUTTON KEYWORDS
           # ══════════════════════════════════════════════════════════════════════
 
-          OPERA_DOWNLOAD_KEYWORDS = [
+          OPERA_DOWNLOAD_KEYWORDS =[
               # English
               "download opera", "download opera gx", "download opera one",
               "download now", "download free", "get opera", "get opera gx",
@@ -953,7 +931,7 @@ jobs:
               "dapatkan opera", "unduh browser", "gratis unduh",
           ]
 
-          AVG_DOWNLOAD_KEYWORDS = [
+          AVG_DOWNLOAD_KEYWORDS =[
               # English
               "download avg", "free download", "download free", "get avg free",
               "download for free", "download avg free", "download now",
@@ -984,7 +962,7 @@ jobs:
               "unduh avg", "unduh gratis", "unduh sekarang",
           ]
 
-          UNIVERSAL_DOWNLOAD_KEYWORDS = [
+          UNIVERSAL_DOWNLOAD_KEYWORDS =[
               # English
               "download", "download now", "free download", "get it free",
               "install now", "get now", "download for free",
@@ -1008,7 +986,7 @@ jobs:
               "unduh", "unduh sekarang",
           ]
 
-          INTERSTITIAL_LINK_KEYWORDS = [
+          INTERSTITIAL_LINK_KEYWORDS =[
               "opera gx", "opera one", "opera browser", "opera for windows",
               "download opera", "click here", "click to download",
               "start download", "get started",
@@ -1032,7 +1010,7 @@ jobs:
               "klik di sini", "mulai unduh",
           ]
 
-          COOKIE_CONSENT_KEYWORDS = [
+          COOKIE_CONSENT_KEYWORDS =[
               # English
               "accept all", "accept cookies", "allow all", "accept selection",
               "i accept", "agree", "i agree", "ok", "accept",
@@ -1061,7 +1039,7 @@ jobs:
           # ══════════════════════════════════════════════════════════════════════
           # MULTILINGUAL "KEEP" / "KEEP ANYWAY" BUTTON KEYWORDS
           # ══════════════════════════════════════════════════════════════════════
-          KEEP_DOWNLOAD_KEYWORDS = [
+          KEEP_DOWNLOAD_KEYWORDS =[
               # English
               "keep", "keep anyway", "keep file", "run anyway",
               "keep download", "download anyway", "allow",
@@ -1069,7 +1047,7 @@ jobs:
               "conserver", "conserver quand même", "garder", "garder quand même",
               "conserver le fichier", "télécharger quand même",
               "continuer quand même", "autoriser",
-              # Portuguese / Brazilian
+              # Portuguese
               "manter", "manter assim mesmo", "manter arquivo",
               "baixar assim mesmo", "continuar assim mesmo",
               "permitir", "manter de qualquer forma",
@@ -1105,7 +1083,7 @@ jobs:
           # MULTILINGUAL OPERA ONE POST-INSTALL BUTTON KEYWORDS
           # ══════════════════════════════════════════════════════════════════════
 
-          OPERA_NEXT_KEYWORDS = [
+          OPERA_NEXT_KEYWORDS =[
               # English
               "next", "next step", "continue", "proceed",
               # French
@@ -1114,7 +1092,8 @@ jobs:
               "próximo", "proximo", "próxima", "seguinte",
               "continuar", "avançar", "avancar",
               # German
-              "weiter", "nächste", "nachste", "nächster schritt", "fortfahren",
+              "weiter", "nächste", "nachste", "nächster schritt",
+              "fortfahren",
               # Spanish
               "siguiente", "próximo", "continuar", "avanzar",
               # Italian
@@ -1129,11 +1108,12 @@ jobs:
               "selanjutnya", "lanjut", "berikutnya",
           ]
 
-          OPERA_DONE_KEYWORDS = [
+          OPERA_DONE_KEYWORDS =[
               # English
               "done", "finish", "complete", "close", "finalize",
               # French
-              "terminé", "termine", "terminer", "fin", "fermer", "finaliser",
+              "terminé", "termine", "terminer", "fin", "fermer",
+              "finaliser",
               # Portuguese / Brazilian
               "concluído", "concluido", "concluir", "finalizar",
               "fechar", "pronto", "fim",
@@ -1141,9 +1121,11 @@ jobs:
               "fertig", "abschließen", "abschliessen", "beenden",
               "schließen", "schliessen",
               # Spanish
-              "listo", "finalizar", "terminar", "cerrar", "completar",
+              "listo", "finalizar", "terminar", "cerrar",
+              "completar",
               # Italian
-              "fatto", "finito", "completato", "chiudi", "termina", "finalizza",
+              "fatto", "finito", "completato", "chiudi",
+              "termina", "finalizza",
               # Dutch
               "klaar", "afsluiten", "voltooien", "sluiten",
               "beëindigen", "beeindigen",
@@ -1156,27 +1138,33 @@ jobs:
               "selesai", "tutup", "akhiri",
           ]
 
-          OPERA_SUBMIT_KEYWORDS = [
+          OPERA_SUBMIT_KEYWORDS =[
               # English
               "submit", "send", "confirm", "apply", "save",
               # French
               "soumettre", "envoyer", "confirmer", "appliquer",
               "sauvegarder", "valider",
               # Portuguese / Brazilian
-              "enviar", "confirmar", "aplicar", "salvar", "submeter",
+              "enviar", "confirmar", "aplicar", "salvar",
+              "submeter",
               # German
               "senden", "absenden", "bestätigen", "bestatigen",
               "anwenden", "speichern",
               # Spanish
-              "enviar", "confirmar", "aplicar", "guardar", "aceptar",
+              "enviar", "confirmar", "aplicar", "guardar",
+              "aceptar",
               # Italian
-              "invia", "conferma", "applica", "salva", "sottometti",
+              "invia", "conferma", "applica", "salva",
+              "sottometti",
               # Dutch
-              "verzenden", "bevestigen", "toepassen", "opslaan", "indienen",
+              "verzenden", "bevestigen", "toepassen", "opslaan",
+              "indienen",
               # Polish
-              "wyślij", "wyslij", "potwierdź", "potwierdz", "zastosuj", "zapisz",
+              "wyślij", "wyslij", "potwierdź", "potwierdz",
+              "zastosuj", "zapisz",
               # Vietnamese
-              "gửi", "gui", "xác nhận", "xac nhan", "áp dụng", "lưu", "luu",
+              "gửi", "gui", "xác nhận", "xac nhan", "áp dụng",
+              "lưu", "luu",
               # Indonesian
               "kirim", "konfirmasi", "terapkan", "simpan",
           ]
@@ -1185,7 +1173,7 @@ jobs:
           # MULTILINGUAL PROXY AUTH DETECTION
           # ══════════════════════════════════════════════════════════════════════
 
-          PROXY_AUTH_TITLE_KEYWORDS = [
+          PROXY_AUTH_TITLE_KEYWORDS =[
               "sign in", "authentication required", "proxy authentication",
               "connect to", "enter credentials", "network authentication",
               "proxy auth", "enter network credentials", "authentication",
@@ -1206,14 +1194,9 @@ jobs:
               "dane logowania", "poświadczenia", "poswiadczenia",
               "đăng nhập", "xác thực", "kết nối", "thông tin xác thực",
               "masuk", "autentikasi", "sambungkan", "kredensial",
-              "войти", "аутентификация", "подключиться", "учётные данные",
-              "giriş", "kimlik doğrulama", "bağlan", "kimlik bilgileri",
-              "登录", "身份验证", "连接", "凭据",
-              "サインイン", "認証", "接続", "資格情報",
-              "로그인", "인증", "연결", "자격 증명",
           ]
 
-          USERNAME_FIELD_KEYWORDS = [
+          USERNAME_FIELD_KEYWORDS =[
               "username", "user name", "user", "login", "account", "email",
               "nom d'utilisateur", "nom d utilisateur", "utilisateur", "identifiant",
               "courriel", "adresse e-mail",
@@ -1226,11 +1209,9 @@ jobs:
               "nazwa użytkownika", "nazwa uzytkownika", "użytkownik", "uzytkownik",
               "tên người dùng", "tài khoản",
               "nama pengguna", "pengguna",
-              "имя пользователя", "логин",
-              "kullanıcı adı", "kullanici adi",
           ]
 
-          PASSWORD_FIELD_KEYWORDS = [
+          PASSWORD_FIELD_KEYWORDS =[
               "password", "pass", "passwd", "secret", "pin",
               "mot de passe", "mdp",
               "senha", "palavra-passe",
@@ -1241,11 +1222,9 @@ jobs:
               "hasło", "haslo",
               "mật khẩu",
               "kata sandi",
-              "пароль",
-              "şifre", "sifre", "parola",
           ]
 
-          SUBMIT_BUTTON_KEYWORDS = [
+          SUBMIT_BUTTON_KEYWORDS =[
               "sign in", "ok", "connect", "login", "submit", "authenticate",
               "continue", "proceed", "confirm", "accept",
               "connexion", "se connecter", "continuer", "confirmer", "accepter", "valider",
@@ -1257,11 +1236,9 @@ jobs:
               "zaloguj", "połącz", "polacz", "kontynuuj", "potwierdź", "potwierdz",
               "đăng nhập", "tiếp tục", "xác nhận",
               "masuk", "lanjutkan", "konfirmasi",
-              "войти", "подключиться", "продолжить",
-              "giriş yap", "bağlan", "devam", "onayla",
           ]
 
-          ADDRESS_BAR_NAMES = [
+          ADDRESS_BAR_NAMES =[
               "address and search bar", "address bar", "search bar",
               "omnibox", "location bar", "url bar", "address",
               "barre d'adresse", "barra de endereços", "adressleiste",
@@ -1269,8 +1246,9 @@ jobs:
               "adresbalk", "pasek adresu", "thanh địa chỉ", "bilah alamat",
           ]
 
-          ADDRESS_BAR_AUTOMATION_IDS = [
-              "addressEditBox", "addressField", "locationBar", "view_1", "omnibox",
+          ADDRESS_BAR_AUTOMATION_IDS =[
+              "addressEditBox", "addressField", "locationBar",
+              "view_1", "omnibox",
           ]
 
           def _is_address_bar_control(ctrl):
@@ -1320,7 +1298,7 @@ jobs:
               return _matches_any(window_text, PROXY_AUTH_TITLE_KEYWORDS)
 
           def _find_username_fields(container):
-              results = []
+              results =[]
               try:
                   all_edits = container.descendants(control_type="Edit")
                   for ctrl in all_edits:
@@ -1342,7 +1320,7 @@ jobs:
               return results
 
           def _find_password_fields(container):
-              results = []
+              results =[]
               try:
                   all_edits = container.descendants(control_type="Edit")
                   for ctrl in all_edits:
@@ -1397,7 +1375,7 @@ jobs:
 
           def _is_auth_dialog_by_structure(window):
               try:
-                  all_edits = [
+                  all_edits =[
                       c for c in window.descendants(control_type="Edit")
                       if not _is_address_bar_control(c)
                   ]
@@ -1431,7 +1409,7 @@ jobs:
                   return "avg" in tl
               elif software_type in ["opera_gx"]:
                   return ("opera" in tl and "gx" in tl) or "opera gx" in tl
-              elif software_type in ["opera_one", "opera_smart_link", "dynamic_opera", "ad_mvn"]:
+              elif software_type in["opera_one", "opera_smart_link", "dynamic_opera", "ad_mvn"]:
                   return "opera" in tl and "edge" not in tl and "chrome web store" not in tl
               return False
 
@@ -1442,8 +1420,8 @@ jobs:
               if edge_window is None:
                   return None, None
 
-              if software_type in ["opera_gx", "opera_one", "opera_smart_link",
-                                   "dynamic_opera", "ad_mvn"]:
+              if software_type in["opera_gx", "opera_one", "opera_smart_link",
+                                    "dynamic_opera", "ad_mvn"]:
                   primary_keywords = OPERA_DOWNLOAD_KEYWORDS
                   brand_label = "Opera"
               elif software_type == "avg":
@@ -1497,7 +1475,7 @@ jobs:
                           ctrl_type = el.element_info.control_type
                       except Exception:
                           continue
-                      if ctrl_type not in ["Hyperlink", "Text", "Image"]:
+                      if ctrl_type not in["Hyperlink", "Text", "Image"]:
                           continue
                       try:
                           wt = (el.window_text() or "").strip()
@@ -1524,7 +1502,7 @@ jobs:
                           ctrl_type = el.element_info.control_type
                       except Exception:
                           continue
-                      if ctrl_type not in ["Button", "Hyperlink", "Text", "Image", "Custom"]:
+                      if ctrl_type not in["Button", "Hyperlink", "Text", "Image", "Custom"]:
                           continue
                       try:
                           wt = (el.window_text() or "").strip()
@@ -1586,6 +1564,8 @@ jobs:
           def click_keep_button_multilingual(edge_window, label=""):
               if edge_window is None:
                   return False
+              
+              clicked = False
 
               try:
                   for btn in edge_window.descendants(control_type="Button"):
@@ -1630,7 +1610,7 @@ jobs:
                   log_msg("Keep", f"[{label}] Strategy1 scan error: {e}")
 
               try:
-                  for container_type in ["ToolBar", "Pane", "Group", "Custom"]:
+                  for container_type in["ToolBar", "Pane", "Group", "Custom"]:
                       try:
                           containers = edge_window.descendants(control_type=container_type)
                       except Exception:
@@ -1861,8 +1841,7 @@ jobs:
               closed_any = False
               try:
                   all_windows = desktop.windows(visible_only=True)
-              except Exception:
-                  return False
+              except Exception: return False
 
               for window in all_windows:
                   try:
@@ -1877,8 +1856,7 @@ jobs:
                                   if child_wt and _is_download_done_window(child_wt):
                                       is_match = True
                                       break
-                          except Exception:
-                              pass
+                          except Exception: pass
 
                       if not is_match: continue
 
@@ -1930,8 +1908,7 @@ jobs:
                       if closed:
                           closed_any = True
                           time.sleep(0.5)
-                  except Exception:
-                      pass
+                  except Exception: pass
               return closed_any
 
           def refocus_target_window(target_window, software_type, label=""):
@@ -2004,7 +1981,7 @@ jobs:
                           ctrl_type = el.element_info.control_type
                       except Exception:
                           continue
-                      if ctrl_type not in ["Button", "Hyperlink", "Text", "Custom"]:
+                      if ctrl_type not in["Button", "Hyperlink", "Text", "Custom"]:
                           continue
                       try:
                           txt = (el.window_text() or "").strip()
@@ -2052,7 +2029,7 @@ jobs:
                       if u_struct and p_struct:
                           log_msg("ProxyAuth", f"[{label}] Using structural detection (2-field dialog).")
                           user_fields = [u_struct]
-                          pass_fields = [p_struct]
+                          pass_fields =[p_struct]
 
                   if user_fields and pass_fields:
                       if _is_address_bar_control(user_fields[0]) or _is_address_bar_control(pass_fields[0]):
@@ -2150,26 +2127,17 @@ jobs:
 
           # ══════════════════════════════════════════════════════════════════════
           # OPERA ONE POST-INSTALL SEQUENCE
-          # FROM: Script 2 (v7) with all enhancements:
-          #   - 25s initialization wait (faster than script 1's 50s)
-          #   - Precision fallback coords (0.85, 0.85) for Next/Done buttons
-          #   - Step 8b: Right Arrow x2 backup navigation
-          #   - 2-second wait after ENTER + Right Arrow keys
-          #   - Submit button clicked at middle-bottom before TAB cycles
-          #   - TAB cycle starting point increased by 2: range(10, 21) instead of range(8, 19)
           # ══════════════════════════════════════════════════════════════════════
           def opera_one_post_install_sequence(opera_window, software_type="opera_one"):
               log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Starting (Multilingual) ===")
               desktop = Desktop(backend="uia")
 
-              # ── STEP 1: Wait 25 seconds for Opera One to initialize ───────────
               log_msg("PostInstall-OP1", "STEP 1: Waiting 25 seconds for Opera One to fully initialize...")
               for s in range(1, 26):
                   log_msg("PostInstall-OP1", f"  Initialization wait: {s}/25 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 1 COMPLETE: 25-second initialization wait finished.")
 
-              # ── STEP 2: Locate and maximize Opera window ──────────────────────
               log_msg("PostInstall-OP1", "STEP 2: Locating Opera One window and applying full-screen maximize...")
               desktop = Desktop(backend="uia")
               opera_window = robust_maximize_opera_window(desktop, software_type, label="step2-fullscreen")
@@ -2178,21 +2146,18 @@ jobs:
               else:
                   log_msg("PostInstall-OP1", f"STEP 2 COMPLETE: Opera window maximized -> '{opera_window.window_text()}'")
 
-              # ── STEP 3: Wait 5 seconds after maximize ─────────────────────────
               log_msg("PostInstall-OP1", "STEP 3: Waiting 5 seconds after maximize...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Post-maximize wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 3 COMPLETE.")
 
-              # ── STEP 4: Additional 5-second settle wait ───────────────────────
               log_msg("PostInstall-OP1", "STEP 4: Additional 5-second settle wait...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Settle wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 4 COMPLETE.")
 
-              # ── STEP 5: Click center of screen ───────────────────────────────
               sw, sh = pyautogui.size()
               cx, cy = sw // 2, sh // 2
               log_msg("PostInstall-OP1", f"STEP 5: Clicking center of screen at ({cx}, {cy}) using mouse...")
@@ -2206,15 +2171,13 @@ jobs:
               except Exception as e:
                   log_msg("PostInstall-OP1", f"STEP 5 ERROR: Mouse click failed: {e}")
 
-              # ── STEP 6: Wait 5 seconds after center click ─────────────────────
               log_msg("PostInstall-OP1", "STEP 6: Waiting 5 seconds after center click...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Post-click wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 6 COMPLETE.")
 
-              # ── STEP 7: Click "Next" 6 times (1s delay) — MULTILINGUAL ────────
-              # Precision fallback: bottom-right at (0.85, 0.85) — consistent across all languages
+              # ── STEP 7: Click "Next" 6 times (1s delay) — MULTILINGUAL ────────────────────
               log_msg("PostInstall-OP1", "STEP 7: Clicking 'Next' button 6 times (multilingual, 1s delay each)...")
               for i in range(1, 7):
                   desktop = Desktop(backend="uia")
@@ -2223,7 +2186,10 @@ jobs:
                   )
                   log_msg("PostInstall-OP1", f"  Next click attempt {i}/6 (multilingual)...")
                   sw_now, sh_now = pyautogui.size()
+                  
+                  # EXTREME PRECISION: Bottom-Right standard position across languages
                   fallback_next = (int(sw_now * 0.85), int(sh_now * 0.85))
+                  
                   clicked = click_opera_button_multilingual(
                       desktop, opera_window, software_type,
                       keyword_list=OPERA_NEXT_KEYWORDS,
@@ -2233,19 +2199,23 @@ jobs:
                   if clicked:
                       log_msg("PostInstall-OP1", f"  Next {i}/6 clicked successfully (multilingual/fallback).")
                   else:
-                      log_msg("PostInstall-OP1", f"  Next {i}/6 not found — fallback already attempted.")
+                      log_msg("PostInstall-OP1", f"  Next {i}/6 not found via multilingual scan — fallback already attempted.")
+                  
                   log_msg("PostInstall-OP1", f"  Waiting 1 second after Next click {i}...")
                   time.sleep(1)
-              log_msg("PostInstall-OP1", "STEP 7 COMPLETE: All 6 Next clicks attempted.")
+              log_msg("PostInstall-OP1", "STEP 7 COMPLETE: All 6 Next clicks attempted (multilingual).")
 
-              # ── STEP 7b: Click "Done" — same precision coords as Next ─────────
+              # ── STEP 7b: Click "Done" — SAME LOCATION AS NEXT ──────────────────────────
               log_msg("PostInstall-OP1", "STEP 7b: Clicking 'Done'/'Finish' button (multilingual)...")
               desktop = Desktop(backend="uia")
               opera_window = force_maximize_and_focus_target(
                   desktop, opera_window, software_type, label="step7b-DONE"
               )
               sw_now, sh_now = pyautogui.size()
+              
+              # EXTREME PRECISION: EXACT Same Coordinate as "Next" to ensure it hits Done reliably
               fallback_done = (int(sw_now * 0.85), int(sh_now * 0.85))
+              
               clicked_done = click_opera_button_multilingual(
                   desktop, opera_window, software_type,
                   keyword_list=OPERA_DONE_KEYWORDS,
@@ -2253,18 +2223,18 @@ jobs:
                   fallback_coords=fallback_done
               )
               if clicked_done:
-                  log_msg("PostInstall-OP1", "STEP 7b COMPLETE: 'Done'/'Finish' clicked successfully.")
+                  log_msg("PostInstall-OP1", "STEP 7b COMPLETE: 'Done'/'Finish' clicked successfully (multilingual).")
               else:
                   log_msg("PostInstall-OP1", "STEP 7b: Multilingual Done not found — fallback already attempted.")
 
-              # ── STEP 8: Wait 5 seconds after Done click ───────────────────────
+              # ── STEP 8: Wait 5 seconds ────────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 8: Waiting 5 seconds after Done click...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Post-Done wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 8 COMPLETE.")
 
-              # ── STEP 8b: Backup keyboard navigation (Right Arrow x2) ──────────
+              # ── STEP 8b: Backup Keyboard Navigation (Right Arrow x2) ───────────
               log_msg("PostInstall-OP1", "STEP 8b: Backup keyboard navigation — pressing Right Arrow 2 times...")
               desktop = Desktop(backend="uia")
               opera_window = force_maximize_and_focus_target(
@@ -2274,9 +2244,9 @@ jobs:
               time.sleep(0.5)
               send_keys('{RIGHT}')
               time.sleep(0.5)
-              log_msg("PostInstall-OP1", "STEP 8b COMPLETE: Right Arrow x2 sent.")
+              log_msg("PostInstall-OP1", "STEP 8b COMPLETE.")
 
-              # ── STEP 9: Press ENTER key ───────────────────────────────────────
+              # ── STEP 9: Press ENTER ───────────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 9: Pressing ENTER key...")
               desktop = Desktop(backend="uia")
               opera_window = force_maximize_and_focus_target(
@@ -2285,28 +2255,19 @@ jobs:
               send_keys('{ENTER}')
               log_msg("PostInstall-OP1", "STEP 9 COMPLETE: ENTER key pressed.")
 
-              # ── STEP 9b: Wait 2 seconds after ENTER + Right Arrow ─────────────
-              log_msg("PostInstall-OP1", "STEP 9b: Waiting 2 seconds after ENTER + Right Arrow navigation...")
+              # ── STEP 10: Wait 2 seconds (Modified) ───────────────────────────────────────
+              log_msg("PostInstall-OP1", "STEP 10: Waiting 2 seconds after ENTER...")
               time.sleep(2)
-              log_msg("PostInstall-OP1", "STEP 9b COMPLETE.")
-
-              # ── STEP 10: Wait 5 seconds ───────────────────────────────────────
-              log_msg("PostInstall-OP1", "STEP 10: Waiting 5 seconds after ENTER...")
-              for s in range(1, 6):
-                  log_msg("PostInstall-OP1", f"  Post-ENTER wait: {s}/5 seconds...")
-                  time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 10 COMPLETE.")
 
-              # ── STEP 11: Click "Submit" at middle-bottom ──────────────────────
-              # Submit button is located at middle-bottom of screen
-              log_msg("PostInstall-OP1", "STEP 11: Clicking 'Submit' button at middle-bottom (multilingual)...")
+              # ── STEP 11: Click "Submit" — MULTILINGUAL (Middle Bottom) ─────────────────────────
+              log_msg("PostInstall-OP1", "STEP 11: Clicking 'Submit' button (multilingual)...")
               desktop = Desktop(backend="uia")
               opera_window = force_maximize_and_focus_target(
                   desktop, opera_window, software_type, label="step11-SUBMIT"
               )
               sw_now, sh_now = pyautogui.size()
-              # Submit is at middle-bottom: center X, 85% down Y
-              fallback_submit = (sw_now // 2, int(sh_now * 0.85))
+              fallback_submit = (sw_now // 2, int(sh_now * 0.85))  # Middle bottom fallback
               clicked_submit = click_opera_button_multilingual(
                   desktop, opera_window, software_type,
                   keyword_list=OPERA_SUBMIT_KEYWORDS,
@@ -2314,20 +2275,18 @@ jobs:
                   fallback_coords=fallback_submit
               )
               if clicked_submit:
-                  log_msg("PostInstall-OP1", "STEP 11 COMPLETE: 'Submit' clicked successfully (middle-bottom).")
+                  log_msg("PostInstall-OP1", "STEP 11 COMPLETE: 'Submit' clicked successfully (multilingual).")
               else:
-                  log_msg("PostInstall-OP1", "STEP 11: Multilingual Submit not found — fallback coordinate click attempted.")
+                  log_msg("PostInstall-OP1", "STEP 11: Multilingual Submit not found — fallback already attempted.")
 
-              # ── STEP 12: Wait 5 seconds after Submit click ────────────────────
               log_msg("PostInstall-OP1", "STEP 12: Waiting 5 seconds after Submit click...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Post-Submit wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 12 COMPLETE.")
 
-              # ── STEP 13: TAB cycle sequence — INCREASED by 2 (range 10→20) ───
-              # Originally range(8, 19), now range(10, 21): starting at 10 TABs, ending at 20 TABs
-              log_msg("PostInstall-OP1", "STEP 13: Starting TAB cycle sequence (10 TABs → 20 TABs, increased by +2)...")
+              # ── STEP 13: Tab cycle starting at 10 (Increased by 2) ────────────
+              log_msg("PostInstall-OP1", "STEP 13: Starting TAB cycle sequence (10 TABs → 20 TABs)...")
               tab_sequence = list(range(10, 21))
               log_msg("PostInstall-OP1", f"  TAB sequence plan: {tab_sequence}")
 
@@ -2548,6 +2507,7 @@ jobs:
               smart_link_interstitial_done = False
               smart_link_interstitial_time = 0
 
+              # Opera One uses 25s threshold from installer execution
               opera_one_installer_executed_time = None
               opera_one_post_install_done = False
 
@@ -2655,10 +2615,10 @@ jobs:
                           download_windows_closed = True
                           edge_window = None
 
-                      # ── Opera One post-install (25s threshold from Script 2) ──
+                      # ── Opera One post-install (25s threshold from installer execution) ──
                       if action_mode == "install" and not opera_one_post_install_done:
                           is_one = (software_type == "opera_one")
-                          is_dynamic = software_type in ["ad_mvn", "dynamic_opera", "opera_smart_link"]
+                          is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
                           if is_one or is_dynamic:
                               if opera_one_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
                                   opera_one_installer_executed_time = time.time()
@@ -2672,9 +2632,10 @@ jobs:
                                       opera_one_post_install_sequence(opera_window, software_type=software_type)
                                       opera_one_post_install_done = True
 
+                      # ── Opera GX post-install (40s threshold from installer execution) ──
                       if action_mode == "install" and not opera_gx_post_install_done:
                           is_gx = (software_type == "opera_gx")
-                          is_dynamic = software_type in ["ad_mvn", "dynamic_opera", "opera_smart_link"]
+                          is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
                           if is_gx or is_dynamic:
                               if opera_gx_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
                                   opera_gx_installer_executed_time = time.time()
@@ -2688,6 +2649,7 @@ jobs:
                                       opera_gx_post_install_sequence(opera_window)
                                       opera_gx_post_install_done = True
 
+                      # ── AVG post-install (60s threshold from installer execution) ──
                       if software_type == "avg" and action_mode == "install" and not avg_post_install_done:
                           if avg_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
                               avg_installer_executed_time = time.time()
@@ -2751,7 +2713,7 @@ jobs:
 
                       # ── MULTILINGUAL DOWNLOAD BUTTON CLICK ─────────────────────
                       if (edge_window and action_mode == "install" and can_click_download
-                              and software_type in ["opera_gx", "opera_one", "ad_mvn",
+                              and software_type in["opera_gx", "opera_one", "ad_mvn",
                                                     "dynamic_opera", "opera_smart_link"]):
                           if not opera_download_clicked:
                               if now - last_dl_multilingual_time > DL_MULTILINGUAL_COOLDOWN:
@@ -2849,7 +2811,7 @@ jobs:
                               except Exception as e:
                                   log_msg("Extension", f"Failed to click 'Add extension': {e}")
                           else:
-                              for btn_name in ["Add to Chrome", "Get"]:
+                              for btn_name in["Add to Chrome", "Get"]:
                                   install_btns = edge_window.descendants(control_type="Button", title=btn_name)
                                   if install_btns:
                                       try:
