@@ -253,7 +253,7 @@ jobs:
           short_os_tag = short_os(os_version)
           short_sw_tag = "MANUAL" if manual_url else short_software(software_choice)
 
-          includes = []
+          includes =[]
           for i in range(tasks_total):
               action_mode = action_list[i]
               absolute_idx = i + 1
@@ -2201,18 +2201,18 @@ jobs:
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 6 COMPLETE.")
 
-              # ── STEP 7: Click "Next" 8 times (1s delay) — MULTILINGUAL ────────────────────
-              log_msg("PostInstall-OP1", "STEP 7: Clicking 'Next' button 8 times (multilingual, 1s delay each)...")
-              for i in range(1, 9):
+              # ── STEP 7: Click "Next" 6 times (1s delay) — MULTILINGUAL ────────────────────
+              log_msg("PostInstall-OP1", "STEP 7: Clicking 'Next' button 6 times (multilingual, 1s delay each)...")
+              for i in range(1, 7):
                   desktop = Desktop(backend="uia")
                   opera_window = force_maximize_and_focus_target(
                       desktop, opera_window, software_type, label=f"step7-NEXT-{i}"
                   )
-                  log_msg("PostInstall-OP1", f"  Next click attempt {i}/8 (multilingual)...")
+                  log_msg("PostInstall-OP1", f"  Next click attempt {i}/6 (multilingual)...")
                   sw_now, sh_now = pyautogui.size()
                   
                   # EXTREME PRECISION: Bottom-Right standard position across languages
-                  fallback_next = (int(sw_now * 0.90), int(sh_now * 0.90))
+                  fallback_next = (int(sw_now * 0.85), int(sh_now * 0.85))
                   
                   clicked = click_opera_button_multilingual(
                       desktop, opera_window, software_type,
@@ -2221,13 +2221,13 @@ jobs:
                       fallback_coords=fallback_next
                   )
                   if clicked:
-                      log_msg("PostInstall-OP1", f"  Next {i}/8 clicked successfully (multilingual/fallback).")
+                      log_msg("PostInstall-OP1", f"  Next {i}/6 clicked successfully (multilingual/fallback).")
                   else:
-                      log_msg("PostInstall-OP1", f"  Next {i}/8 not found via multilingual scan — fallback already attempted.")
+                      log_msg("PostInstall-OP1", f"  Next {i}/6 not found via multilingual scan — fallback already attempted.")
                   
                   log_msg("PostInstall-OP1", f"  Waiting 1 second after Next click {i}...")
                   time.sleep(1)
-              log_msg("PostInstall-OP1", "STEP 7 COMPLETE: All 8 Next clicks attempted (multilingual).")
+              log_msg("PostInstall-OP1", "STEP 7 COMPLETE: All 6 Next clicks attempted (multilingual).")
 
               # ── STEP 7b: Click "Done" — SAME LOCATION AS NEXT ──────────────────────────
               log_msg("PostInstall-OP1", "STEP 7b: Clicking 'Done'/'Finish' button (multilingual)...")
@@ -2238,7 +2238,7 @@ jobs:
               sw_now, sh_now = pyautogui.size()
               
               # EXTREME PRECISION: EXACT Same Coordinate as "Next" to ensure it hits Done reliably
-              fallback_done = (int(sw_now * 0.90), int(sh_now * 0.90))
+              fallback_done = (int(sw_now * 0.85), int(sh_now * 0.85))
               
               clicked_done = click_opera_button_multilingual(
                   desktop, opera_window, software_type,
@@ -2251,12 +2251,26 @@ jobs:
               else:
                   log_msg("PostInstall-OP1", "STEP 7b: Multilingual Done not found — fallback already attempted.")
 
+              # ── STEP 8: Wait 5 seconds ────────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 8: Waiting 5 seconds after Done click...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Post-Done wait: {s}/5 seconds...")
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 8 COMPLETE.")
 
+              # ── STEP 8b: Backup Keyboard Navigation (Left Arrow x2) ───────────
+              log_msg("PostInstall-OP1", "STEP 8b: Backup keyboard navigation — pressing Left Arrow 2 times...")
+              desktop = Desktop(backend="uia")
+              opera_window = force_maximize_and_focus_target(
+                  desktop, opera_window, software_type, label="step8b-LEFT"
+              )
+              send_keys('{LEFT}')
+              time.sleep(0.5)
+              send_keys('{LEFT}')
+              time.sleep(0.5)
+              log_msg("PostInstall-OP1", "STEP 8b COMPLETE.")
+
+              # ── STEP 9: Press ENTER ───────────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 9: Pressing ENTER key...")
               desktop = Desktop(backend="uia")
               opera_window = force_maximize_and_focus_target(
@@ -2265,6 +2279,7 @@ jobs:
               send_keys('{ENTER}')
               log_msg("PostInstall-OP1", "STEP 9 COMPLETE: ENTER key pressed.")
 
+              # ── STEP 10: Wait 5 seconds ───────────────────────────────────────
               log_msg("PostInstall-OP1", "STEP 10: Waiting 5 seconds after ENTER...")
               for s in range(1, 6):
                   log_msg("PostInstall-OP1", f"  Post-ENTER wait: {s}/5 seconds...")
@@ -2497,26 +2512,23 @@ jobs:
 
               log_msg("PostInstall-AVG", "=== AVG Post-Install Sequence Completed Successfully ===")
 
-          def handle_automation(software_type, action_mode, timeout=360):
+          def handle_automation(username, password, software_type, use_proxy, action_mode, timeout=360):
               desktop = Desktop(backend="uia")
               start_time = time.time()
               proxy_auth_time = start_time
 
-              log_msg("UI-Engine", f"Started monitoring. Action Mode: {action_mode.upper()} | "
-                      f"Type: {software_type} | ProxyType: {PROXY_TYPE} | UseProxy: {USE_PROXY}")
-              log_msg("UI-Engine", f"Proxy credentials ready: User={PROXY_USER[:25]}... | "
-                      f"Server={PROXY_SERVER}")
+              log_msg("UI-Engine", f"Started monitoring. Action Mode: {action_mode.upper()} | Type: {software_type}")
 
-              opera_download_clicked = False
-              avg_download_clicked = False
-              keep_sequence_pending = False
-              keep_backup_pending = False
-              keep_backup_time = 0
+              last_ctrl_j_time = time.time()
               last_dl_click_time = 0
+              ctrl_j_attempts = 0
+              keep_clicked = False
+              avg_download_clicked = False
 
               smart_link_interstitial_done = False
               smart_link_interstitial_time = 0
 
+              # Opera One post-install uses 50s threshold
               opera_one_installer_executed_time = None
               opera_one_post_install_done = False
 
@@ -2533,12 +2545,6 @@ jobs:
 
               last_interference_sweep = 0
               INTERFERENCE_SWEEP_INTERVAL = 2
-
-              last_auth_inject_time = 0
-              AUTH_INJECT_COOLDOWN = 8
-
-              last_dl_multilingual_time = 0
-              DL_MULTILINGUAL_COOLDOWN = 5
 
               while time.time() - start_time < timeout:
                   try:
@@ -2563,56 +2569,6 @@ jobs:
                           dismiss_interference_windows(desktop, software_type, label="continuous")
                           last_interference_sweep = now
 
-                      # ── UNIVERSAL MULTILINGUAL PROXY AUTH DETECTION ────────────
-                      if USE_PROXY and (now - last_auth_inject_time > AUTH_INJECT_COOLDOWN):
-                          try:
-                              for auth_window in desktop.windows(visible_only=True):
-                                  awt = auth_window.window_text() or ""
-                                  if "Microsoft Edge" in awt and awt != "Microsoft Edge":
-                                      continue
-                                  if _is_target_software_window(awt, software_type):
-                                      continue
-                                  if _is_proxy_auth_dialog(awt):
-                                      log_msg("ProxyAuth", f"[TopLevel] Auth dialog detected: '{awt}' "
-                                              f"— injecting {PROXY_TYPE} credentials...")
-                                      injected = inject_proxy_auth(auth_window, label=f"toplevel-{awt[:30]}")
-                                      if injected:
-                                          proxy_auth_time = time.time()
-                                          last_auth_inject_time = now
-                                          log_msg("ProxyAuth", f"[TopLevel] Credentials injected for '{awt}'.")
-                                          break
-                          except Exception as auth_ex:
-                              log_msg("ProxyAuth", f"Auth scan error: {auth_ex}")
-
-                          if edge_window and (now - last_auth_inject_time > AUTH_INJECT_COOLDOWN):
-                              try:
-                                  for child in edge_window.children():
-                                      cwt = child.window_text() or ""
-                                      if _is_proxy_auth_dialog(cwt):
-                                          log_msg("ProxyAuth", f"[EdgeChild] Embedded auth dialog: '{cwt}'")
-                                          injected = inject_proxy_auth(child, label=f"edge-child-{cwt[:20]}")
-                                          if injected:
-                                              proxy_auth_time = time.time()
-                                              last_auth_inject_time = now
-                                              break
-                              except Exception:
-                                  pass
-
-                          if edge_window and (now - last_auth_inject_time > AUTH_INJECT_COOLDOWN):
-                              try:
-                                  u_struct, p_struct = _is_auth_dialog_by_structure(edge_window)
-                                  if u_struct and p_struct:
-                                      if (not _is_address_bar_control(u_struct) and
-                                              not _is_address_bar_control(p_struct)):
-                                          log_msg("ProxyAuth", "[EdgeStructural] 2-field dialog found inside Edge — "
-                                                  "attempting structural credential injection.")
-                                          injected = inject_proxy_auth(edge_window, label="edge-structural")
-                                          if injected:
-                                              proxy_auth_time = time.time()
-                                              last_auth_inject_time = now
-                              except Exception:
-                                  pass
-
                       if not download_windows_closed and os.path.exists(sentinel_path):
                           log_msg("Sentinel", "Flag detected (EXE found). Initiating download window cleanup sequence...")
                           for attempt in range(1, 8):
@@ -2624,6 +2580,7 @@ jobs:
                           download_windows_closed = True
                           edge_window = None
 
+                      # ── Opera One post-install (50s from installer sentinel) ──
                       if action_mode == "install" and not opera_one_post_install_done:
                           is_one = (software_type == "opera_one")
                           is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
@@ -2640,6 +2597,7 @@ jobs:
                                       opera_one_post_install_sequence(opera_window, software_type=software_type)
                                       opera_one_post_install_done = True
 
+                      # ── Opera GX post-install (40s from installer sentinel) ──
                       if action_mode == "install" and not opera_gx_post_install_done:
                           is_gx = (software_type == "opera_gx")
                           is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
@@ -2656,6 +2614,7 @@ jobs:
                                       opera_gx_post_install_sequence(opera_window)
                                       opera_gx_post_install_done = True
 
+                      # ── AVG post-install (60s from installer sentinel) ──
                       if software_type == "avg" and action_mode == "install" and not avg_post_install_done:
                           if avg_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
                               avg_installer_executed_time = time.time()
@@ -2665,25 +2624,43 @@ jobs:
                               avg_post_install_sequence(avg_window)
                               avg_post_install_done = True
 
-                      # ── MULTILINGUAL COOKIE CONSENT ────────────────────────────
-                      if edge_window:
-                          try:
-                              for btn in edge_window.descendants(control_type="Button"):
-                                  try:
-                                      btn_txt = (btn.window_text() or "").strip()
-                                  except Exception:
-                                      btn_txt = ""
-                                  if btn_txt and _matches_any(btn_txt, COOKIE_CONSENT_KEYWORDS):
+                      # A. Proxy Authentication dialog
+                      if use_proxy and (edge_window or opera_window or avg_window):
+                          for w in [edge_window, opera_window, avg_window]:
+                              if w:
+                                  user_fields = w.descendants(control_type="Edit", title="Username")
+                                  pass_fields = w.descendants(control_type="Edit", title="Password")
+                                  if user_fields and pass_fields:
                                       try:
-                                          log_msg("Cookies", f"Found consent button: '{btn_txt}'. Clicking...")
-                                          btn.click_input()
-                                          time.sleep(1)
-                                          break
-                                      except Exception:
-                                          pass
-                          except Exception:
-                              pass
+                                          log_msg("Proxy", "Authentication dialog detected.")
+                                          w.set_focus()
+                                          time.sleep(0.5)
+                                          user_fields[0].click_input()
+                                          user_fields[0].type_keys(username, with_spaces=True, pause=0.02)
+                                          pass_fields[0].click_input()
+                                          pass_fields[0].type_keys(password, with_spaces=True, pause=0.02)
+                                          btn = w.descendants(control_type="Button", title="Sign in")
+                                          if btn:
+                                              btn[0].click_input()
+                                          else:
+                                              pass_fields[0].type_keys("{ENTER}")
+                                          proxy_auth_time = time.time()
+                                          log_msg("Proxy", "Credentials injected.")
+                                      except Exception as e:
+                                          log_msg("Proxy", f"Auth injection failed: {e}")
 
+                      # Cookie Handling
+                      if edge_window:
+                          for cookie_btn in["Accept all", "Accepter tout", "Tout accepter", "Accept Cookies", "Allow all", "Accept selection"]:
+                              btns = edge_window.descendants(control_type="Button", title=cookie_btn)
+                              if btns:
+                                  try:
+                                      log_msg("Cookies", f"Found consent button: '{cookie_btn}'. Clicking...")
+                                      btns[0].click_input()
+                                      time.sleep(1)
+                                  except: pass
+
+                      # Smart Link Interstitial
                       if edge_window and software_type == "opera_smart_link":
                           elapsed = time.time() - proxy_auth_time
                           if not smart_link_interstitial_done:
@@ -2701,6 +2678,7 @@ jobs:
                                   smart_link_interstitial_done = True
                                   smart_link_interstitial_time = time.time()
 
+                      # Skip logic for Click-Only mode
                       if action_mode == "click":
                           if software_type == "opera_smart_link":
                               if not smart_link_interstitial_done:
@@ -2712,99 +2690,83 @@ jobs:
                           time.sleep(1)
                           continue
 
+                      # Edge Download Protection
+                      if edge_window and action_mode == "install":
+                          keep_btns = edge_window.descendants(control_type="Button", title="Keep")
+                          if keep_btns:
+                              log_msg("EdgeProtect", "Detected 'Keep' warning. Clicking...")
+                              keep_clicked = True
+                              keep_btns[0].click_input()
+                              time.sleep(0.5)
+                          keep_anyway = edge_window.descendants(control_type="Button", title="Keep anyway")
+                          if keep_anyway:
+                              log_msg("EdgeProtect", "Detected 'Keep anyway' warning. Clicking...")
+                              keep_clicked = True
+                              keep_anyway[0].click_input()
+                              time.sleep(0.5)
+
+                      # Interstitial & Final Download Auto-Clicker
                       can_click_download = True
                       if software_type == "opera_smart_link":
                           if not smart_link_interstitial_done or (time.time() - smart_link_interstitial_time < 15):
                               can_click_download = False
 
-                      # ── MULTILINGUAL DOWNLOAD BUTTON CLICK ─────────────────────
-                      if (edge_window and action_mode == "install" and can_click_download
-                              and software_type in["opera_gx", "opera_one", "ad_mvn",
-                                                    "dynamic_opera", "opera_smart_link"]):
-                          if not opera_download_clicked:
-                              if now - last_dl_multilingual_time > DL_MULTILINGUAL_COOLDOWN:
-                                  log_msg("DL-Engine", f"Opera download scan triggered (type={software_type})...")
-                                  clicked = click_download_button_multilingual(
-                                      edge_window, software_type, label=f"opera-dl-{software_type}"
-                                  )
-                                  if clicked:
-                                      last_dl_multilingual_time = now
-                                      last_dl_click_time = now
-                                      opera_download_clicked = True
-                                      keep_sequence_pending = True
-                                      log_msg("DL-Engine", "Opera download button clicked successfully (multilingual).")
-                                  else:
-                                      log_msg("DL-Engine", "Opera download button not found this cycle. Will retry.")
+                      if edge_window and action_mode == "install" and can_click_download and software_type in["opera_gx", "opera_one", "ad_mvn", "dynamic_opera", "opera_smart_link"]:
+                          if time.time() - last_dl_click_time > 5:
+                              clicked_something = False
+                              dl_keywords =["download opera", "download now", "télécharger", "baixar", "herunterladen", "descargar", "download"]
+                              for btn in edge_window.descendants(control_type="Button"):
+                                  btntxt = btn.window_text()
+                                  if btntxt and any(k in btntxt.lower() for k in dl_keywords):
+                                      try:
+                                          log_msg("Download", f"Targeting Final Download Button: '{btntxt}'...")
+                                          edge_window.set_focus()
+                                          time.sleep(0.5)
+                                          btn.click_input()
+                                          last_dl_click_time = time.time()
+                                          clicked_something = True
+                                          log_msg("Download", "Button clicked successfully.")
+                                          break
+                                      except Exception as e:
+                                          log_msg("Download", f"Failed to click button: {e}")
+                              if not clicked_something:
+                                  for el in edge_window.descendants():
+                                      if el.element_info.control_type in["Hyperlink", "Text", "Image"]:
+                                          wt = el.window_text()
+                                          if wt and "opera" in wt.lower() and len(wt) < 150:
+                                              if "smart link" not in wt.lower() and "http" not in wt.lower() and "playabledownloads" not in wt.lower():
+                                                  try:
+                                                      log_msg("Download", f"Targeting Interstitial Link: '{wt}'...")
+                                                      edge_window.set_focus()
+                                                      el.click_input()
+                                                      last_dl_click_time = time.time()
+                                                      log_msg("Download", "Link clicked successfully.")
+                                                      break
+                                                  except Exception as e:
+                                                      log_msg("Download", f"Failed to click link: {e}")
 
+                      # AVG Download Trigger
                       if edge_window and action_mode == "install" and software_type == "avg":
                           elapsed = time.time() - proxy_auth_time
                           if not avg_download_clicked and elapsed > 20:
-                              log_msg("AVG", f"{elapsed:.1f}s elapsed. Initiating multilingual AVG download click.")
-                              clicked = click_download_button_multilingual(
-                                  edge_window, software_type, label="avg-dl-multilingual"
-                              )
-                              if clicked:
-                                  log_msg("AVG", "Multilingual AVG download button clicked successfully.")
-                              else:
-                                  log_msg("AVG", "Multilingual button not found — falling back to TAB+ENTER keyboard method.")
-                                  try:
-                                      edge_window.set_focus()
-                                      time.sleep(0.5)
-                                      send_keys('{TAB}')
-                                      delay = random.uniform(1.0, 2.0)
-                                      time.sleep(delay)
-                                      send_keys('{ENTER}')
-                                      log_msg("AVG", "TAB+ENTER fallback sent.")
-                                  except Exception as e:
-                                      log_msg("AVG", f"Keyboard sequence error: {e}")
-                              avg_download_clicked = True
-                              last_dl_click_time = time.time()
-                              keep_sequence_pending = True
-
-                      # ── STATE MACHINE: KEEP SEQUENCE ───────────────────────────
-                      if keep_sequence_pending and (now - last_dl_click_time >= 15):
-                          keep_sequence_pending = False
-                          log_msg("KeepSeq", "15 seconds elapsed since download click. Executing robust Ctrl+J -> Tab x4 -> Enter sequence.")
-                          try:
-                              edge_window.set_focus()
-                              time.sleep(0.5)
-                              log_msg("KeepSeq", "Sending Ctrl+J...")
-                              send_keys('^j')
-                              time.sleep(1)
-                              for t_idx in range(1, 5):
-                                  log_msg("KeepSeq", f"Sending TAB {t_idx}/4...")
-                                  send_keys('{TAB}')
-                                  time.sleep(1)
-                              log_msg("KeepSeq", "Sending ENTER...")
-                              send_keys('{ENTER}')
-                              log_msg("KeepSeq", "Keep keyboard sequence complete.")
-                          except Exception as e:
-                              log_msg("KeepSeq", f"Error in Keep keyboard sequence: {e}")
-                          
-                          keep_backup_pending = True
-                          keep_backup_time = time.time()
-
-                      if keep_backup_pending and (now - keep_backup_time >= 5):
-                          keep_backup_pending = False
-                          if not os.path.exists(sentinel_path):
-                              log_msg("KeepSeq", "Software not downloaded yet. Executing backup UI automation click for Keep...")
+                              log_msg("AVG", f"{elapsed:.1f}s elapsed. Initiating AVG TAB+ENTER download trigger.")
                               try:
                                   edge_window.set_focus()
                                   time.sleep(0.5)
-                                  click_keep_button_multilingual(edge_window, label="keep-backup")
-                                  
-                                  # Absolute coordinate backup for keep in Edge flyout
-                                  sw_now, sh_now = pyautogui.size()
-                                  cx = sw_now - 220
-                                  cy = 175
-                                  log_msg("KeepSeq", f"Absolute fallback mouse click at ({cx}, {cy}) for Keep.")
-                                  pyautogui.moveTo(cx, cy, duration=0.2)
-                                  pyautogui.click()
+                                  send_keys('{TAB}')
+                                  delay = random.uniform(1.0, 2.0)
+                                  time.sleep(delay)
+                                  send_keys('{ENTER}')
+                                  log_msg("AVG", "TAB+ENTER sent. Waiting 10s...")
+                                  for w in range(1, 11):
+                                      log_msg("AVG", f"Download init wait: {w}/10 seconds...")
+                                      time.sleep(1)
+                                  log_msg("AVG", "10s init wait complete.")
                               except Exception as e:
-                                  log_msg("KeepSeq", f"Backup Keep click error: {e}")
-                          else:
-                              log_msg("KeepSeq", "Software already downloaded. Skipping Keep UI backup.")
+                                  log_msg("AVG", f"Keyboard sequence error: {e}")
+                              avg_download_clicked = True
 
+                      # Browser Extensions Handling
                       if edge_window and action_mode == "install":
                           add_ext_btns = edge_window.descendants(control_type="Button", title="Add extension")
                           if add_ext_btns:
@@ -2830,20 +2792,39 @@ jobs:
                                       except Exception as e:
                                           log_msg("Extension", f"Failed to click '{btn_name}': {e}")
 
+                      # Ctrl+J to open downloads flyout
+                      can_ctrl_j = True
+                      if software_type == "avg" and not avg_download_clicked:
+                          can_ctrl_j = False
+
+                      if action_mode == "install" and not keep_clicked and edge_window and can_ctrl_j and (time.time() - last_ctrl_j_time > 15) and ctrl_j_attempts < 4:
+                          try:
+                              edge_window.set_focus()
+                              time.sleep(0.5)
+                              log_msg("Utility", f"Sending Ctrl+J... (Attempt {ctrl_j_attempts + 1}/4)")
+                              send_keys('^j')
+                              last_ctrl_j_time = time.time()
+                              ctrl_j_attempts += 1
+                          except Exception as e:
+                              log_msg("Utility", f"Ctrl+J failed: {e}")
+
                   except Exception as e:
                       pass
                   time.sleep(1)
 
           if __name__ == "__main__":
-              software_type = sys.argv[1] if len(sys.argv) > 1 else "avg"
-              action_mode   = sys.argv[2] if len(sys.argv) > 2 else "install"
-              handle_automation(software_type, action_mode)
+              username      = sys.argv[1] if len(sys.argv) > 1 else ""
+              password      = sys.argv[2] if len(sys.argv) > 2 else ""
+              software_type = sys.argv[3] if len(sys.argv) > 3 else "avg"
+              use_proxy     = (sys.argv[4].lower() == "true") if len(sys.argv) > 4 else False
+              action_mode   = sys.argv[5] if len(sys.argv) > 5 else "install"
+              handle_automation(username, password, software_type, use_proxy, action_mode)
           '@
           $handlerPy | Out-File -FilePath "$env:TEMP\auto_handler.py" -Encoding utf8
 
           Write-Host "[UI-Engine] Spinning up background Python process..." -ForegroundColor DarkGray
           Start-Process -FilePath "python" `
-              -ArgumentList "-u `"$env:TEMP\auto_handler.py`" `"$env:SOFTWARE_TYPE`" `"$env:ACTION_MODE`"" `
+              -ArgumentList "-u `"$env:TEMP\auto_handler.py`" `"$env:PROXY_USER`" `"$env:PROXY_PASS`" `"$env:SOFTWARE_TYPE`" `"$env:USE_PROXY`" `"$env:ACTION_MODE`"" `
               -WindowStyle Hidden
 
           $dlFolder    = "$env:USERPROFILE\Downloads"
