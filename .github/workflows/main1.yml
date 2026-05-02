@@ -211,7 +211,7 @@ jobs:
               "Ad-MVN - A2Z":        "https://u.to/a2zadmvnxsmrt/Y-t7Ig",
           }
           all_urls = {**avg_urls, **opera_urls, **opera_one_urls, **ad_mvn_urls}
-          dynamic_links =["Opera - Techx", "Opera - Fatradez", "Opera - James", "Opera - Oliver", "Opera - Mahal"]
+          dynamic_links =["Opera - Techx", "Opera - Fatradez", "Opera - James", "Opera - Oliver", "Opera - Mahal", "Opera - AD"]
 
           if manual_url:
               target_url = manual_url
