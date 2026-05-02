@@ -34,69 +34,12 @@ on:
           - '10'
         default: '5'
       num_installs:
-        description: 'Number of Installs (per cycle)'
+        description: 'Number of Installs'
         required: true
-        type: choice
-        options:
-          - '0'
-          - '1'
-          - '2'
-          - '3'
-          - '4'
-          - '5'
-          - '6'
-          - '7'
-          - '8'
-          - '9'
-          - '10'
+        type: string
         default: '5'
       num_clicks:
-        description: 'Number of Clicks (per cycle)'
-        required: true
-        type: choice
-        options:
-          - '0'
-          - '1'
-          - '2'
-          - '3'
-          - '4'
-          - '5'
-          - '6'
-          - '7'
-          - '8'
-          - '9'
-          - '10'
-        default: '1'
-      num_run_cycles:
-        description: 'Number of Run Cycles'
-        required: true
-        type: choice
-        options:
-          - '1'
-          - '2'
-          - '3'
-          - '4'
-          - '5'
-          - '6'
-          - '7'
-          - '8'
-          - '9'
-          - '10'
-        default: '1'
-      wait_period:
-        description: 'Wait Period Between Cycles (Minutes)'
-        required: true
-        type: choice
-        options:
-          - '0'
-          - '2'
-          - '4'
-          - '6'
-          - '8'
-          - '10'
-        default: '0'
-      current_cycle:
-        description: 'Current Cycle (System Use Only)'
+        description: 'Number of Clicks'
         required: true
         type: string
         default: '1'
@@ -196,8 +139,6 @@ jobs:
           EMAIL: ${{ inputs.getscreen_email }}
           NUM_INSTALLS: ${{ inputs.num_installs }}
           NUM_CLICKS: ${{ inputs.num_clicks }}
-          CURRENT_CYCLE: ${{ inputs.current_cycle }}
-          NUM_CYCLES: ${{ inputs.num_run_cycles }}
           OS_VERSION: ${{ inputs.os_version }}
           SOFTWARE_CHOICE: ${{ inputs.software_choice }}
           MANUAL_URL: ${{ inputs.manual_software_url }}
@@ -207,14 +148,19 @@ jobs:
 
           print("========== INITIALIZING MATRIX GENERATION ==========")
 
-          num_installs = int(os.environ.get("NUM_INSTALLS", "5"))
-          num_clicks = int(os.environ.get("NUM_CLICKS", "1"))
-          current_cycle = int(os.environ.get("CURRENT_CYCLE", "1"))
-          num_cycles = int(os.environ.get("NUM_CYCLES", "1"))
+          try:
+              num_installs = int(os.environ.get("NUM_INSTALLS", "5"))
+          except ValueError:
+              num_installs = 5
+              
+          try:
+              num_clicks = int(os.environ.get("NUM_CLICKS", "1"))
+          except ValueError:
+              num_clicks = 1
           
-          tasks_per_cycle = num_installs + num_clicks
+          tasks_total = num_installs + num_clicks
 
-          if tasks_per_cycle == 0:
+          if tasks_total == 0:
               print("No tasks configured (installs=0, clicks=0). Exiting.")
               with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                   f.write("matrix={\"include\":[]}\n")
@@ -224,12 +170,11 @@ jobs:
               with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                   f.write("has_tasks=true\n")
 
-          action_list = ["install"] * num_installs +["click"] * num_clicks
+          action_list = ["install"] * num_installs + ["click"] * num_clicks
           random.shuffle(action_list)
 
-          print(f"[Action Matrix] Total Tasks This Cycle: {tasks_per_cycle}")
-          print(f"[Action Matrix] Cycle                 : {current_cycle} / {num_cycles}")
-          print(f"[Action Matrix] Randomized Queue      : {action_list}")
+          print(f"[Action Matrix] Total Tasks Queued: {tasks_total}")
+          print(f"[Action Matrix] Randomized Queue  : {action_list}")
 
           run_manual = os.environ.get("RUN_MANUAL", "false").lower() == "true"
           manual_url_input = os.environ.get("MANUAL_URL", "").strip()
@@ -309,12 +254,12 @@ jobs:
           short_sw_tag = "MANUAL" if manual_url else short_software(software_choice)
 
           includes =[]
-          for i in range(tasks_per_cycle):
+          for i in range(tasks_total):
               action_mode = action_list[i]
-              absolute_idx = (current_cycle - 1) * tasks_per_cycle + i + 1
+              absolute_idx = i + 1
               
               includes.append({
-                  "task_index":      i + 1,
+                  "task_index":      absolute_idx,
                   "absolute_idx":    absolute_idx,
                   "email":           email,
                   "os":              os_version,
@@ -325,7 +270,7 @@ jobs:
                   "short_os_tag":    short_os_tag,
                   "short_sw_tag":    short_sw_tag
               })
-              print(f"[Task Queued] Absolute Task {absolute_idx} | Action={action_mode}")
+              print(f"[Task Queued] Task {absolute_idx} | Action={action_mode}")
 
           if not includes:
               print("Error: Valid configuration could not be generated. Exiting.")
@@ -356,8 +301,6 @@ jobs:
           COUNTRY: ${{ inputs.proxy_country }}
           MOBILE: ${{ inputs.mobile_proxies }}
           STICKY: ${{ inputs.sticky_sessions }}
-          CURRENT_CYCLE: ${{ inputs.current_cycle }}
-          NUM_CYCLES: ${{ inputs.num_run_cycles }}
           TASK_INDEX: ${{ matrix.task_index }}
           ABSOLUTE_IDX: ${{ matrix.absolute_idx }}
           NUM_INSTALLS: ${{ inputs.num_installs }}
@@ -380,13 +323,20 @@ jobs:
           country_input = os.environ.get("COUNTRY", "USA")
           mobile = os.environ.get("MOBILE", "false").lower() == "true"
           sticky = os.environ.get("STICKY", "false").lower() == "true"
-          current_cycle = int(os.environ.get("CURRENT_CYCLE", "1"))
-          absolute_idx = int(os.environ.get("ABSOLUTE_IDX", "1")) - 1 # 0-indexed globally across all cycles
+          absolute_idx = int(os.environ.get("ABSOLUTE_IDX", "1")) - 1 # 0-indexed globally
           task_index = int(os.environ.get("TASK_INDEX", "1"))
-          num_installs = int(os.environ.get("NUM_INSTALLS", "0"))
-          num_clicks = int(os.environ.get("NUM_CLICKS", "0"))
-          num_cycles = int(os.environ.get("NUM_CYCLES", "1"))
-          tasks_per_cycle = num_installs + num_clicks
+          
+          try:
+              num_installs = int(os.environ.get("NUM_INSTALLS", "0"))
+          except ValueError:
+              num_installs = 0
+              
+          try:
+              num_clicks = int(os.environ.get("NUM_CLICKS", "0"))
+          except ValueError:
+              num_clicks = 0
+              
+          tasks_total = num_installs + num_clicks
           
           short_os = os.environ.get("SHORT_OS", "OS")
           short_sw = os.environ.get("SHORT_SW", "SW")
@@ -456,8 +406,8 @@ jobs:
                   if resp.status_code == 200:
                       data = resp.json()
                       if "ip" in data:
-                          cc = data.get("country", "US")
-                          tz = data.get("timezone", "UTC")
+                          cc = data.get("country") or "US"
+                          tz = data.get("timezone") or "UTC"
                           return {
                               **pinfo,
                               'working': True, 'country_code': cc, 'country_name': data.get('region') or cc, 'ip': data.get("ip") or 'unknown', 
@@ -489,8 +439,8 @@ jobs:
               return {'working': False, **pinfo}
 
           # Parse inputs into lists
-          manual_proxies = []
-          scrapeops_keys =[]
+          manual_proxies =[]
+          scrapeops_keys = []
           floppy_keys =[]
           
           if proxy_input and not without_proxy:
@@ -514,16 +464,15 @@ jobs:
           use_proxy = False
 
           print(f"========== DEVICE PROXY INITIALIZATION ==========")
-          print(f"Task Global Index: {absolute_idx} (Cycle {current_cycle}, Task {task_index})")
+          print(f"Task Global Index: {task_index} / {tasks_total}")
 
           if without_proxy:
               print("Proxy disabled manually.")
           elif manual_proxies:
-              total_absolute_tasks = tasks_per_cycle * num_cycles
-              print(f"[Manual Proxy] Assigning proxies using stride distribution (Total Proxies Provided: {len(manual_proxies)}, Total Absolute Tasks: {total_absolute_tasks})...")
+              print(f"[Manual Proxy] Assigning proxies using stride distribution (Total Proxies Provided: {len(manual_proxies)}, Total Tasks: {tasks_total})...")
               
-              for attempt in range( (len(manual_proxies) // total_absolute_tasks) + 1 ):
-                  idx = absolute_idx + (attempt * total_absolute_tasks)
+              for attempt in range( (len(manual_proxies) // max(1, tasks_total)) + 1 ):
+                  idx = absolute_idx + (attempt * tasks_total)
                   if idx >= len(manual_proxies):
                       break
                   
@@ -540,7 +489,7 @@ jobs:
                       active_proxy = res
                       active_proxy['proxy_type_label'] = 'manual'
                       use_proxy = True
-                      print(f"SUCCESS: Active manual proxy found -> IP: {res['ip']} | CC: {res.get('country_code', 'US')}")
+                      print(f"SUCCESS: Active manual proxy found -> IP: {res['ip']} | CC: {res['country_code']}")
                       break
                   else:
                       print("Proxy failed geography test or connection. Proceeding to next assigned proxy in stride mapping.")
@@ -560,7 +509,7 @@ jobs:
                       creds_data = creds_resp.json()
                       
                       params = {"type": proxy_type, "country": cc_input.upper(), "protocol": "http", "rotation": "0" if sticky else "-1"}
-                      if sticky: params["session"] = f"c{current_cycle}t{task_index}_{str(uuid.uuid4())[:8]}"
+                      if sticky: params["session"] = f"t{task_index}_{str(uuid.uuid4())[:8]}"
                       
                       builder_resp = requests.get(f"{FLOPPY_BASE}/v1/rotating/smartParamsBuilder", headers={"X-Api-Key": current_key}, params=params, timeout=12)
                       b_data = builder_resp.json()
@@ -594,7 +543,7 @@ jobs:
                   
                   proxy_user = f"scrapeops.country={cc_input}"
                   if mobile: proxy_user += ".mobile=true"
-                  if sticky: proxy_user += f".sticky_session=c{current_cycle}t{task_index}{str(uuid.uuid4())[:4]}"
+                  if sticky: proxy_user += f".sticky_session=t{task_index}{str(uuid.uuid4())[:4]}"
                   
                   pinfo = {
                       'username': proxy_user, 'password': current_key, 'host': 'residential-proxy.scrapeops.io',
@@ -633,7 +582,7 @@ jobs:
               }
 
           cc_final = (active_proxy.get('country_code') or 'US').upper()
-          device_name = f"C{current_cycle}-T{absolute_idx + 1}-{short_os}-{short_sw}-{action_cap}-{cc_final}"
+          device_name = f"T{task_index}-{short_os}-{short_sw}-{action_cap}-{cc_final}"
           print(f"Assigned Identity: {device_name}")
 
           env_file = os.environ.get('GITHUB_ENV')
@@ -1094,38 +1043,38 @@ jobs:
               # English
               "keep", "keep anyway", "keep file", "run anyway",
               "keep download", "download anyway", "allow",
-              # French (France + Canada + Switzerland + Belgium)
+              # French
               "conserver", "conserver quand même", "garder", "garder quand même",
               "conserver le fichier", "télécharger quand même",
               "continuer quand même", "autoriser",
-              # Portuguese / Brazilian (Brazil)
+              # Portuguese
               "manter", "manter assim mesmo", "manter arquivo",
               "baixar assim mesmo", "continuar assim mesmo",
               "permitir", "manter de qualquer forma",
-              # German (Germany + Switzerland + Austria)
+              # German
               "beibehalten", "trotzdem beibehalten", "datei beibehalten",
               "trotzdem herunterladen", "trotzdem ausführen",
               "zulassen", "behalten", "trotzdem behalten",
-              # Spanish (Mexico + Spain)
+              # Spanish
               "conservar", "conservar de todas formas", "conservar igualmente",
               "mantener", "mantener de todas formas", "descargar igualmente",
               "ejecutar igualmente", "permitir",
-              # Italian (Italy + Switzerland)
+              # Italian
               "mantieni", "mantieni comunque", "mantieni il file",
               "scarica comunque", "esegui comunque", "consenti",
               "tieni", "tieni comunque",
-              # Dutch (Netherlands + Belgium)
+              # Dutch
               "bewaren", "toch bewaren", "bestand bewaren",
               "toch downloaden", "toch uitvoeren",
               "toestaan", "behouden", "toch behouden",
-              # Polish (Poland)
+              # Polish
               "zachowaj", "zachowaj mimo to", "zachowaj plik",
               "pobierz mimo to", "uruchom mimo to",
               "zezwól", "zatrzymaj", "zatrzymaj mimo to",
-              # Vietnamese (Vietnam)
+              # Vietnamese
               "giữ lại", "vẫn giữ", "giữ tệp",
               "vẫn tải xuống", "vẫn chạy", "cho phép",
-              # Indonesian (Indonesia)
+              # Indonesian
               "simpan", "tetap simpan", "simpan file",
               "tetap unduh", "tetap jalankan", "izinkan",
           ]
@@ -1134,7 +1083,6 @@ jobs:
           # MULTILINGUAL OPERA ONE POST-INSTALL BUTTON KEYWORDS
           # ══════════════════════════════════════════════════════════════════════
 
-          # "Next" button in all supported languages
           OPERA_NEXT_KEYWORDS =[
               # English
               "next", "next step", "continue", "proceed",
@@ -1160,7 +1108,6 @@ jobs:
               "selanjutnya", "lanjut", "berikutnya",
           ]
 
-          # "Done" / "Finish" button in all supported languages
           OPERA_DONE_KEYWORDS =[
               # English
               "done", "finish", "complete", "close", "finalize",
@@ -1191,7 +1138,6 @@ jobs:
               "selesai", "tutup", "akhiri",
           ]
 
-          # "Submit" button in all supported languages
           OPERA_SUBMIT_KEYWORDS =[
               # English
               "submit", "send", "confirm", "apply", "save",
@@ -1248,11 +1194,6 @@ jobs:
               "dane logowania", "poświadczenia", "poswiadczenia",
               "đăng nhập", "xác thực", "kết nối", "thông tin xác thực",
               "masuk", "autentikasi", "sambungkan", "kredensial",
-              "войти", "аутентификация", "подключиться", "учётные данные",
-              "giriş", "kimlik doğrulama", "bağlan", "kimlik bilgileri",
-              "登录", "身份验证", "连接", "凭据",
-              "サインイン", "認証", "接続", "資格情報",
-              "로그인", "인증", "연결", "자격 증명",
           ]
 
           USERNAME_FIELD_KEYWORDS =[
@@ -1268,8 +1209,6 @@ jobs:
               "nazwa użytkownika", "nazwa uzytkownika", "użytkownik", "uzytkownik",
               "tên người dùng", "tài khoản",
               "nama pengguna", "pengguna",
-              "имя пользователя", "логин",
-              "kullanıcı adı", "kullanici adi",
           ]
 
           PASSWORD_FIELD_KEYWORDS =[
@@ -1283,8 +1222,6 @@ jobs:
               "hasło", "haslo",
               "mật khẩu",
               "kata sandi",
-              "пароль",
-              "şifre", "sifre", "parola",
           ]
 
           SUBMIT_BUTTON_KEYWORDS =[
@@ -1299,8 +1236,6 @@ jobs:
               "zaloguj", "połącz", "polacz", "kontynuuj", "potwierdź", "potwierdz",
               "đăng nhập", "tiếp tục", "xác nhận",
               "masuk", "lanjutkan", "konfirmasi",
-              "войти", "подключиться", "продолжить",
-              "giriş yap", "bağlan", "devam", "onayla",
           ]
 
           ADDRESS_BAR_NAMES =[
@@ -1540,7 +1475,7 @@ jobs:
                           ctrl_type = el.element_info.control_type
                       except Exception:
                           continue
-                      if ctrl_type not in["Hyperlink", "Text", "Image"]:
+                      if ctrl_type not in ["Hyperlink", "Text", "Image"]:
                           continue
                       try:
                           wt = (el.window_text() or "").strip()
@@ -1687,7 +1622,7 @@ jobs:
                                       ctrl_type = el.element_info.control_type
                                   except Exception:
                                       continue
-                                  if ctrl_type not in["Button", "Hyperlink", "Text"]:
+                                  if ctrl_type not in ["Button", "Hyperlink", "Text"]:
                                       continue
                                   try:
                                       wt = (el.window_text() or "").strip()
@@ -1747,7 +1682,7 @@ jobs:
                       if not _is_interference_window(wt):
                           continue
 
-                      log_msg("WinGuard", f"Interference window detected: '{wt}'[{label}]")
+                      log_msg("WinGuard", f"Interference window detected: '{wt}' [{label}]")
                       closed = False
 
                       try:
@@ -2046,7 +1981,7 @@ jobs:
                           ctrl_type = el.element_info.control_type
                       except Exception:
                           continue
-                      if ctrl_type not in["Button", "Hyperlink", "Text", "Custom"]:
+                      if ctrl_type not in ["Button", "Hyperlink", "Text", "Custom"]:
                           continue
                       try:
                           txt = (el.window_text() or "").strip()
@@ -2078,16 +2013,6 @@ jobs:
 
               return False
 
-          def click_opera_button(desktop, opera_window, software_type, button_names, label=""):
-              sw, sh = pyautogui.size()
-              fallback = (sw // 2, int(sh * 0.80))
-              return click_opera_button_multilingual(
-                  desktop, opera_window, software_type,
-                  keyword_list=button_names,
-                  label=label,
-                  fallback_coords=fallback
-              )
-
           # ══════════════════════════════════════════════════════════════════════
           # MULTILINGUAL PROXY AUTH INJECTION
           # ══════════════════════════════════════════════════════════════════════
@@ -2103,8 +2028,8 @@ jobs:
                       u_struct, p_struct = _is_auth_dialog_by_structure(window)
                       if u_struct and p_struct:
                           log_msg("ProxyAuth", f"[{label}] Using structural detection (2-field dialog).")
-                          user_fields =[u_struct]
-                          pass_fields = [p_struct]
+                          user_fields = [u_struct]
+                          pass_fields =[p_struct]
 
                   if user_fields and pass_fields:
                       if _is_address_bar_control(user_fields[0]) or _is_address_bar_control(pass_fields[0]):
@@ -2689,7 +2614,7 @@ jobs:
 
                       if action_mode == "install" and not opera_gx_post_install_done:
                           is_gx = (software_type == "opera_gx")
-                          is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
+                          is_dynamic = software_type in ["ad_mvn", "dynamic_opera", "opera_smart_link"]
                           if is_gx or is_dynamic:
                               if opera_gx_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
                                   opera_gx_installer_executed_time = time.time()
@@ -2864,7 +2789,7 @@ jobs:
                               except Exception as e:
                                   log_msg("Extension", f"Failed to click 'Add extension': {e}")
                           else:
-                              for btn_name in["Add to Chrome", "Get"]:
+                              for btn_name in ["Add to Chrome", "Get"]:
                                   install_btns = edge_window.descendants(control_type="Button", title=btn_name)
                                   if install_btns:
                                       try:
@@ -2978,7 +2903,7 @@ jobs:
                           while ($locked) {
                               Start-Sleep -Seconds 2
                               try {
-                                  $s =[System.IO.File]::Open($file.FullName, 'Open', 'Read', 'None')
+                                  $s = [System.IO.File]::Open($file.FullName, 'Open', 'Read', 'None')
                                   $s.Close()
                                   $locked = $false
                                   Write-Output "[$($actualSoftware.ToUpper())-INSTALL] File unlocked and ready."
@@ -3150,61 +3075,3 @@ jobs:
           Write-Host "Session lifecycle fully executed." -ForegroundColor Green
           Write-Host "Leaving runner online to exhaust remaining job timeout margin..." -ForegroundColor DarkGray
           Start-Sleep -Seconds 360
-
-  next_cycle:
-    name: Trigger Next Cycle
-    needs:[prepare_matrix, remote_session]
-    if: always() && github.event_name == 'workflow_dispatch' && needs.prepare_matrix.outputs.has_tasks == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Next Run
-        env:
-          CURRENT_CYCLE: ${{ inputs.current_cycle }}
-          NUM_CYCLES: ${{ inputs.num_run_cycles }}
-          WAIT_PERIOD: ${{ inputs.wait_period }}
-        run: |
-          if[ -z "${{ secrets.GH_PAT }}" ]; then
-            export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-          else
-            export GH_TOKEN="${{ secrets.GH_PAT }}"
-          fi
-          
-          current=${CURRENT_CYCLE}
-          max_cycles=${NUM_CYCLES}
-          wait_time=${WAIT_PERIOD}
-          
-          if[ "$current" -lt "$max_cycles" ]; then
-            next_cycle=$((current + 1))
-            echo "=========================================================="
-            echo "Cycle $current of $max_cycles completed."
-            echo "Waiting for $wait_time minutes before triggering cycle $next_cycle..."
-            echo "=========================================================="
-            sleep $((wait_time * 60))
-            
-            echo "Triggering next cycle ($next_cycle)..."
-            gh workflow run "${{ github.workflow }}" \
-              --repo "${{ github.repository }}" \
-              -f os_version="${{ inputs.os_version }}" \
-              -f getscreen_email="${{ inputs.getscreen_email }}" \
-              -f num_devices="${{ inputs.num_devices }}" \
-              -f num_installs="${{ inputs.num_installs }}" \
-              -f num_clicks="${{ inputs.num_clicks }}" \
-              -f num_run_cycles="${{ inputs.num_run_cycles }}" \
-              -f wait_period="${{ inputs.wait_period }}" \
-              -f software_choice="${{ inputs.software_choice }}" \
-              -f manual_software_url="${{ inputs.manual_software_url }}" \
-              -f run_manual_link="${{ inputs.run_manual_link }}" \
-              -f scrapeops_api_key="${{ inputs.scrapeops_api_key }}" \
-              -f use_without_proxy="${{ inputs.use_without_proxy }}" \
-              -f proxy_country="${{ inputs.proxy_country }}" \
-              -f mobile_proxies="${{ inputs.mobile_proxies }}" \
-              -f sticky_sessions="${{ inputs.sticky_sessions }}" \
-              -f current_cycle="$next_cycle" \
-              --ref "${{ github.ref }}"
-              
-            echo "Success! Next cycle deployed into queue."
-          else
-            echo "=========================================================="
-            echo "All $max_cycles run cycles completed successfully!"
-            echo "=========================================================="
-          fi
