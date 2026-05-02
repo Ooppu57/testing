@@ -74,7 +74,7 @@ on:
           - 'Ad-MVN - B4Books'
           - 'Ad-MVN - Orderflowz'
           - 'Ad-MVN - A2Z'
-        default: 'Opera - James'
+        default: 'Opera - Oliver'
       manual_software_url:
         description: 'Manual Software URL'
         required: false
