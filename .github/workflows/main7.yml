@@ -1,4 +1,4 @@
-name: Parallel Windows Auto-Installer v7
+name: Parallel Windows Auto-Installerv7
 
 on:
   workflow_dispatch:
@@ -170,7 +170,7 @@ jobs:
               with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                   f.write("has_tasks=true\n")
 
-          action_list = ["install"] * num_installs +["click"] * num_clicks
+          action_list = ["install"] * num_installs + ["click"] * num_clicks
           random.shuffle(action_list)
 
           print(f"[Action Matrix] Total Tasks Queued: {tasks_total}")
@@ -253,7 +253,7 @@ jobs:
           short_os_tag = short_os(os_version)
           short_sw_tag = "MANUAL" if manual_url else short_software(software_choice)
 
-          includes =[]
+          includes = []
           for i in range(tasks_total):
               action_mode = action_list[i]
               absolute_idx = i + 1
@@ -439,8 +439,8 @@ jobs:
               return {'working': False, **pinfo}
 
           # Parse inputs into lists
-          manual_proxies =[]
-          scrapeops_keys = []
+          manual_proxies = []
+          scrapeops_keys =[]
           floppy_keys =[]
           
           if proxy_input and not without_proxy:
@@ -2027,6 +2027,16 @@ jobs:
 
               return False
 
+          def click_opera_button(desktop, opera_window, software_type, button_names, label=""):
+              sw, sh = pyautogui.size()
+              fallback = (sw // 2, int(sh * 0.80))
+              return click_opera_button_multilingual(
+                  desktop, opera_window, software_type,
+                  keyword_list=button_names,
+                  label=label,
+                  fallback_coords=fallback
+              )
+
           # ══════════════════════════════════════════════════════════════════════
           # MULTILINGUAL PROXY AUTH INJECTION
           # ══════════════════════════════════════════════════════════════════════
@@ -2043,7 +2053,7 @@ jobs:
                       if u_struct and p_struct:
                           log_msg("ProxyAuth", f"[{label}] Using structural detection (2-field dialog).")
                           user_fields =[u_struct]
-                          pass_fields =[p_struct]
+                          pass_fields = [p_struct]
 
                   if user_fields and pass_fields:
                       if _is_address_bar_control(user_fields[0]) or _is_address_bar_control(pass_fields[0]):
@@ -2191,17 +2201,17 @@ jobs:
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 6 COMPLETE.")
 
-              # ── STEP 7: Click "Next" 7 times (1s delay each) — MULTILINGUAL ─────────────
-              log_msg("PostInstall-OP1", "STEP 7: Clicking 'Next' button 7 times (multilingual, 1s delay each)...")
-              for i in range(1, 8):
+              # ── STEP 7: Click "Next" 8 times (1s delay) — MULTILINGUAL ────────────────────
+              log_msg("PostInstall-OP1", "STEP 7: Clicking 'Next' button 8 times (multilingual, 1s delay each)...")
+              for i in range(1, 9):
                   desktop = Desktop(backend="uia")
                   opera_window = force_maximize_and_focus_target(
                       desktop, opera_window, software_type, label=f"step7-NEXT-{i}"
                   )
-                  log_msg("PostInstall-OP1", f"  Next click attempt {i}/7 (multilingual)...")
+                  log_msg("PostInstall-OP1", f"  Next click attempt {i}/8 (multilingual)...")
                   sw_now, sh_now = pyautogui.size()
                   
-                  # Opera One's Next button is specifically located at the bottom right
+                  # EXTREME PRECISION: Bottom-Right standard position across languages
                   fallback_next = (int(sw_now * 0.90), int(sh_now * 0.90))
                   
                   clicked = click_opera_button_multilingual(
@@ -2211,15 +2221,15 @@ jobs:
                       fallback_coords=fallback_next
                   )
                   if clicked:
-                      log_msg("PostInstall-OP1", f"  Next {i}/7 clicked successfully.")
+                      log_msg("PostInstall-OP1", f"  Next {i}/8 clicked successfully (multilingual/fallback).")
                   else:
-                      log_msg("PostInstall-OP1", f"  Next {i}/7 not found via multilingual scan — fallback already attempted.")
+                      log_msg("PostInstall-OP1", f"  Next {i}/8 not found via multilingual scan — fallback already attempted.")
                   
                   log_msg("PostInstall-OP1", f"  Waiting 1 second after Next click {i}...")
                   time.sleep(1)
-              log_msg("PostInstall-OP1", "STEP 7 COMPLETE: All 7 Next clicks attempted.")
+              log_msg("PostInstall-OP1", "STEP 7 COMPLETE: All 8 Next clicks attempted (multilingual).")
 
-              # ── STEP 7b: Click "Done" — MULTILINGUAL ──────────────────────────
+              # ── STEP 7b: Click "Done" — SAME LOCATION AS NEXT ──────────────────────────
               log_msg("PostInstall-OP1", "STEP 7b: Clicking 'Done'/'Finish' button (multilingual)...")
               desktop = Desktop(backend="uia")
               opera_window = force_maximize_and_focus_target(
@@ -2227,7 +2237,7 @@ jobs:
               )
               sw_now, sh_now = pyautogui.size()
               
-              # 'Done' usually replaces 'Next' at the exact same bottom right position
+              # EXTREME PRECISION: EXACT Same Coordinate as "Next" to ensure it hits Done reliably
               fallback_done = (int(sw_now * 0.90), int(sh_now * 0.90))
               
               clicked_done = click_opera_button_multilingual(
@@ -2237,7 +2247,7 @@ jobs:
                   fallback_coords=fallback_done
               )
               if clicked_done:
-                  log_msg("PostInstall-OP1", "STEP 7b COMPLETE: 'Done'/'Finish' clicked successfully.")
+                  log_msg("PostInstall-OP1", "STEP 7b COMPLETE: 'Done'/'Finish' clicked successfully (multilingual).")
               else:
                   log_msg("PostInstall-OP1", "STEP 7b: Multilingual Done not found — fallback already attempted.")
 
@@ -2276,7 +2286,7 @@ jobs:
                   fallback_coords=fallback_submit
               )
               if clicked_submit:
-                  log_msg("PostInstall-OP1", "STEP 11 COMPLETE: 'Submit' clicked successfully.")
+                  log_msg("PostInstall-OP1", "STEP 11 COMPLETE: 'Submit' clicked successfully (multilingual).")
               else:
                   log_msg("PostInstall-OP1", "STEP 11: Multilingual Submit not found — fallback already attempted.")
 
@@ -2807,7 +2817,7 @@ jobs:
                               except Exception as e:
                                   log_msg("Extension", f"Failed to click 'Add extension': {e}")
                           else:
-                              for btn_name in ["Add to Chrome", "Get"]:
+                              for btn_name in["Add to Chrome", "Get"]:
                                   install_btns = edge_window.descendants(control_type="Button", title=btn_name)
                                   if install_btns:
                                       try:
@@ -2921,7 +2931,7 @@ jobs:
                           while ($locked) {
                               Start-Sleep -Seconds 2
                               try {
-                                  $s = [System.IO.File]::Open($file.FullName, 'Open', 'Read', 'None')
+                                  $s =[System.IO.File]::Open($file.FullName, 'Open', 'Read', 'None')
                                   $s.Close()
                                   $locked = $false
                                   Write-Output "[$($actualSoftware.ToUpper())-INSTALL] File unlocked and ready."
