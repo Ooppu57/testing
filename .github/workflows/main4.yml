@@ -32,7 +32,7 @@ on:
           - '8'
           - '9'
           - '10'
-        default: '5'
+        default: '1'
       num_installs:
         description: 'Number of Installs (per cycle)'
         required: true
@@ -66,7 +66,7 @@ on:
           - '8'
           - '9'
           - '10'
-        default: '1'
+        default: '10'
       num_run_cycles:
         description: 'Number of Run Cycles'
         required: true
@@ -82,7 +82,7 @@ on:
           - '8'
           - '9'
           - '10'
-        default: '1'
+        default: '2'
       wait_period:
         description: 'Wait Period Between Cycles (Minutes)'
         required: true
@@ -94,7 +94,7 @@ on:
           - '6'
           - '8'
           - '10'
-        default: '0'
+        default: '2'
       current_cycle:
         description: 'Current Cycle (System Use Only)'
         required: true
@@ -124,7 +124,7 @@ on:
           - 'Ad-MVN - B4Books'
           - 'Ad-MVN - Orderflowz'
           - 'Ad-MVN - A2Z'
-        default: 'Opera - Fatradez'
+        default: 'Opera - Techx'
       manual_software_url:
         description: 'Manual Software URL'
         required: false
