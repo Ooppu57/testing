@@ -253,7 +253,7 @@ jobs:
           short_os_tag = short_os(os_version)
           short_sw_tag = "MANUAL" if manual_url else short_software(software_choice)
 
-          includes =[]
+          includes = []
           for i in range(tasks_total):
               action_mode = action_list[i]
               absolute_idx = i + 1
@@ -1421,7 +1421,7 @@ jobs:
               tl = text.lower()
               if software_type == "avg":
                   return "avg" in tl
-              elif software_type in ["opera_gx"]:
+              elif software_type in["opera_gx"]:
                   return ("opera" in tl and "gx" in tl) or "opera gx" in tl
               elif software_type in["opera_one", "opera_smart_link", "dynamic_opera", "ad_mvn"]:
                   return "opera" in tl and "edge" not in tl and "chrome web store" not in tl
@@ -2156,11 +2156,12 @@ jobs:
               log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Starting (Multilingual) ===")
               desktop = Desktop(backend="uia")
 
-              log_msg("PostInstall-OP1", "STEP 1: Waiting 50 seconds for Opera One to fully initialize...")
-              for s in range(1, 51):
-                  log_msg("PostInstall-OP1", f"  Initialization wait: {s}/50 seconds...")
+              # ── STEP 1: Wait 25 seconds after installer executed ──────────────
+              log_msg("PostInstall-OP1", "STEP 1: Waiting 25 seconds for Opera One to fully initialize...")
+              for s in range(1, 26):
+                  log_msg("PostInstall-OP1", f"  Initialization wait: {s}/25 seconds...")
                   time.sleep(1)
-              log_msg("PostInstall-OP1", "STEP 1 COMPLETE: 50-second initialization wait finished.")
+              log_msg("PostInstall-OP1", "STEP 1 COMPLETE: 25-second initialization wait finished.")
 
               log_msg("PostInstall-OP1", "STEP 2: Locating Opera One window and applying full-screen maximize...")
               desktop = Desktop(backend="uia")
@@ -2258,15 +2259,15 @@ jobs:
                   time.sleep(1)
               log_msg("PostInstall-OP1", "STEP 8 COMPLETE.")
 
-              # ── STEP 8b: Backup Keyboard Navigation (Left Arrow x2) ───────────
-              log_msg("PostInstall-OP1", "STEP 8b: Backup keyboard navigation — pressing Left Arrow 2 times...")
+              # ── STEP 8b: Backup Keyboard Navigation (Right Arrow x2) ───────────
+              log_msg("PostInstall-OP1", "STEP 8b: Backup keyboard navigation — pressing Right Arrow 2 times...")
               desktop = Desktop(backend="uia")
               opera_window = force_maximize_and_focus_target(
-                  desktop, opera_window, software_type, label="step8b-LEFT"
+                  desktop, opera_window, software_type, label="step8b-RIGHT"
               )
-              send_keys('{LEFT}')
+              send_keys('{RIGHT}')
               time.sleep(0.5)
-              send_keys('{LEFT}')
+              send_keys('{RIGHT}')
               time.sleep(0.5)
               log_msg("PostInstall-OP1", "STEP 8b COMPLETE.")
 
@@ -2528,7 +2529,7 @@ jobs:
               smart_link_interstitial_done = False
               smart_link_interstitial_time = 0
 
-              # Opera One post-install uses 50s threshold
+              # Opera One post-install uses 25s threshold (halved)
               opera_one_installer_executed_time = None
               opera_one_post_install_done = False
 
@@ -2545,6 +2546,12 @@ jobs:
 
               last_interference_sweep = 0
               INTERFERENCE_SWEEP_INTERVAL = 2
+
+              last_auth_inject_time = 0
+              AUTH_INJECT_COOLDOWN = 8
+
+              last_dl_multilingual_time = 0
+              DL_MULTILINGUAL_COOLDOWN = 5
 
               while time.time() - start_time < timeout:
                   try:
@@ -2569,6 +2576,56 @@ jobs:
                           dismiss_interference_windows(desktop, software_type, label="continuous")
                           last_interference_sweep = now
 
+                      # ── UNIVERSAL MULTILINGUAL PROXY AUTH DETECTION ────────────
+                      if USE_PROXY and (now - last_auth_inject_time > AUTH_INJECT_COOLDOWN):
+                          try:
+                              for auth_window in desktop.windows(visible_only=True):
+                                  awt = auth_window.window_text() or ""
+                                  if "Microsoft Edge" in awt and awt != "Microsoft Edge":
+                                      continue
+                                  if _is_target_software_window(awt, software_type):
+                                      continue
+                                  if _is_proxy_auth_dialog(awt):
+                                      log_msg("ProxyAuth", f"[TopLevel] Auth dialog detected: '{awt}' "
+                                              f"— injecting {PROXY_TYPE} credentials...")
+                                      injected = inject_proxy_auth(auth_window, label=f"toplevel-{awt[:30]}")
+                                      if injected:
+                                          proxy_auth_time = time.time()
+                                          last_auth_inject_time = now
+                                          log_msg("ProxyAuth", f"[TopLevel] Credentials injected for '{awt}'.")
+                                          break
+                          except Exception as auth_ex:
+                              log_msg("ProxyAuth", f"Auth scan error: {auth_ex}")
+
+                          if edge_window and (now - last_auth_inject_time > AUTH_INJECT_COOLDOWN):
+                              try:
+                                  for child in edge_window.children():
+                                      cwt = child.window_text() or ""
+                                      if _is_proxy_auth_dialog(cwt):
+                                          log_msg("ProxyAuth", f"[EdgeChild] Embedded auth dialog: '{cwt}'")
+                                          injected = inject_proxy_auth(child, label=f"edge-child-{cwt[:20]}")
+                                          if injected:
+                                              proxy_auth_time = time.time()
+                                              last_auth_inject_time = now
+                                              break
+                              except Exception:
+                                  pass
+
+                          if edge_window and (now - last_auth_inject_time > AUTH_INJECT_COOLDOWN):
+                              try:
+                                  u_struct, p_struct = _is_auth_dialog_by_structure(edge_window)
+                                  if u_struct and p_struct:
+                                      if (not _is_address_bar_control(u_struct) and
+                                              not _is_address_bar_control(p_struct)):
+                                          log_msg("ProxyAuth", "[EdgeStructural] 2-field dialog found inside Edge — "
+                                                  "attempting structural credential injection.")
+                                          injected = inject_proxy_auth(edge_window, label="edge-structural")
+                                          if injected:
+                                              proxy_auth_time = time.time()
+                                              last_auth_inject_time = now
+                              except Exception:
+                                  pass
+
                       if not download_windows_closed and os.path.exists(sentinel_path):
                           log_msg("Sentinel", "Flag detected (EXE found). Initiating download window cleanup sequence...")
                           for attempt in range(1, 8):
@@ -2580,20 +2637,20 @@ jobs:
                           download_windows_closed = True
                           edge_window = None
 
-                      # ── Opera One post-install (50s from installer sentinel) ──
+                      # ── Opera One post-install (25s from installer sentinel) ──
                       if action_mode == "install" and not opera_one_post_install_done:
                           is_one = (software_type == "opera_one")
                           is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
                           if is_one or is_dynamic:
                               if opera_one_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
                                   opera_one_installer_executed_time = time.time()
-                                  log_msg("PostInstall-OP1", f"Installer sentinel detected. Post-install sequence fires in 50s.")
-                              if opera_one_installer_executed_time is not None and (time.time() - opera_one_installer_executed_time) >= 50:
+                                  log_msg("PostInstall-OP1", f"Installer sentinel detected. Post-install sequence fires in 25s.")
+                              if opera_one_installer_executed_time is not None and (time.time() - opera_one_installer_executed_time) >= 25:
                                   if is_dynamic and opera_window and "GX" in opera_window.window_text().upper():
                                       log_msg("PostInstall-OP1", "Dynamic resolved to GX. Skipping One sequence.")
                                       opera_one_post_install_done = True
                                   else:
-                                      log_msg("PostInstall-OP1", "50s threshold reached. Launching Opera One post-install sequence.")
+                                      log_msg("PostInstall-OP1", "25s threshold reached. Launching Opera One post-install sequence.")
                                       opera_one_post_install_sequence(opera_window, software_type=software_type)
                                       opera_one_post_install_done = True
 
