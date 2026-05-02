@@ -74,7 +74,7 @@ on:
           - 'Ad-MVN - B4Books'
           - 'Ad-MVN - Orderflowz'
           - 'Ad-MVN - A2Z'
-        default: 'Opera - James'
+        default: 'Opera - Fatradez'
       manual_software_url:
         description: 'Manual Software URL'
         required: false
@@ -89,7 +89,7 @@ on:
         description: 'ScrapeOps / FloppyData / Manual Proxies'
         required: false
         type: string
-        default: 'bcaa80a2-4fcf-475a-8e98-8dc59ac7b9ad'
+        default: '1IFG1IFjMPZi4DcrQ16KF2ku_fbxeCXI'
       use_without_proxy:
         description: 'Run without proxy'
         required: true
