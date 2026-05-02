@@ -224,7 +224,7 @@ jobs:
               with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                   f.write("has_tasks=true\n")
 
-          action_list = ["install"] * num_installs + ["click"] * num_clicks
+          action_list = ["install"] * num_installs +["click"] * num_clicks
           random.shuffle(action_list)
 
           print(f"[Action Matrix] Total Tasks This Cycle: {tasks_per_cycle}")
@@ -456,13 +456,14 @@ jobs:
                   if resp.status_code == 200:
                       data = resp.json()
                       if "ip" in data:
-                          cc = data.get("country", "US")
-                          tz = data.get("timezone", "UTC")
+                          cc = data.get("country") or "US"
+                          tz = data.get("timezone") or "UTC"
                           return {
-                              'working': True, 'country_code': cc, 'country_name': data.get('region') or cc, 'ip': data.get("ip"), 
-                              'city': data.get("city", ""), 'region': data.get("region", ""), 'timezone_iana': tz, 
+                              **pinfo,
+                              'working': True, 'country_code': cc, 'country_name': data.get('region') or cc, 'ip': data.get("ip") or 'unknown', 
+                              'city': data.get("city") or "", 'region': data.get("region") or "", 'timezone_iana': tz, 
                               'timezone_windows': tz_to_windows_tz(tz), 'windows_locale': country_code_to_locale(cc), 
-                              'windows_keyboard': country_code_to_keyboard(cc), **pinfo
+                              'windows_keyboard': country_code_to_keyboard(cc)
                           }
               except Exception as e:
                   print(f"ipinfo.io check failed: {e}")
@@ -473,13 +474,14 @@ jobs:
                   if resp.status_code == 200:
                       data = resp.json()
                       if data.get('status') == 'success':
-                          cc = data.get('countryCode', 'US').upper()
-                          tz = data.get('timezone', 'UTC')
+                          cc = data.get('countryCode') or 'US'
+                          tz = data.get('timezone') or 'UTC'
                           return {
-                              'working': True, 'country_code': cc, 'country_name': data.get('country', cc), 'ip': data.get('query', ''),
-                              'city': data.get('city', ''), 'region': data.get('regionName', ''), 'timezone_iana': tz, 
+                              **pinfo,
+                              'working': True, 'country_code': cc, 'country_name': data.get('country') or cc, 'ip': data.get('query') or 'unknown',
+                              'city': data.get('city') or '', 'region': data.get('regionName') or '', 'timezone_iana': tz, 
                               'timezone_windows': tz_to_windows_tz(tz), 'windows_locale': country_code_to_locale(cc), 
-                              'windows_keyboard': country_code_to_keyboard(cc), **pinfo
+                              'windows_keyboard': country_code_to_keyboard(cc)
                           }
               except Exception as e:
                   print(f"ip-api.com check failed: {e}")
@@ -613,10 +615,10 @@ jobs:
                           fallback_cc = cc_input.upper()
                           fallback_iana = fallback_tz_map.get(fallback_cc, "UTC")
                           active_proxy = {
+                              **pinfo,
                               'working': True, 'country_code': fallback_cc, 'country_name': country_input, 'ip': 'unknown',
                               'city': '', 'region': '', 'timezone_iana': fallback_iana, 'timezone_windows': tz_to_windows_tz(fallback_iana),
-                              'windows_locale': country_code_to_locale(fallback_cc), 'windows_keyboard': country_code_to_keyboard(fallback_cc),
-                              **pinfo
+                              'windows_locale': country_code_to_locale(fallback_cc), 'windows_keyboard': country_code_to_keyboard(fallback_cc)
                           }
                           active_proxy['proxy_type_label'] = 'scrapeops'
                           use_proxy = True
@@ -630,16 +632,16 @@ jobs:
                   'windows_locale': 'en-US', 'windows_keyboard': '0409:00000409'
               }
 
-          cc_final = active_proxy.get('country_code', 'US').upper()
+          cc_final = (active_proxy.get('country_code') or 'US').upper()
           device_name = f"C{current_cycle}-T{absolute_idx + 1}-{short_os}-{short_sw}-{action_cap}-{cc_final}"
           print(f"Assigned Identity: {device_name}")
 
           env_file = os.environ.get('GITHUB_ENV')
           with open(env_file, 'a', encoding='utf-8') as f:
-              f.write(f"PROXY_SERVER={active_proxy['server']}\n")
-              f.write(f"PROXY_USER={active_proxy['username']}\n")
-              f.write(f"PROXY_PASS={active_proxy['password']}\n")
-              f.write(f"PROXY_TYPE={active_proxy['proxy_type_label']}\n")
+              f.write(f"PROXY_SERVER={active_proxy.get('server', '')}\n")
+              f.write(f"PROXY_USER={active_proxy.get('username', '')}\n")
+              f.write(f"PROXY_PASS={active_proxy.get('password', '')}\n")
+              f.write(f"PROXY_TYPE={active_proxy.get('proxy_type_label', 'none')}\n")
               f.write(f"USE_PROXY={'true' if use_proxy else 'false'}\n")
               f.write(f"PROXY_COUNTRY_CODE={cc_final}\n")
               f.write(f"PROXY_CITY={active_proxy.get('city', '')}\n")
@@ -1745,7 +1747,7 @@ jobs:
                       if not _is_interference_window(wt):
                           continue
 
-                      log_msg("WinGuard", f"Interference window detected: '{wt}' [{label}]")
+                      log_msg("WinGuard", f"Interference window detected: '{wt}'[{label}]")
                       closed = False
 
                       try:
@@ -2044,7 +2046,7 @@ jobs:
                           ctrl_type = el.element_info.control_type
                       except Exception:
                           continue
-                      if ctrl_type not in ["Button", "Hyperlink", "Text", "Custom"]:
+                      if ctrl_type not in["Button", "Hyperlink", "Text", "Custom"]:
                           continue
                       try:
                           txt = (el.window_text() or "").strip()
@@ -3161,7 +3163,7 @@ jobs:
           NUM_CYCLES: ${{ inputs.num_run_cycles }}
           WAIT_PERIOD: ${{ inputs.wait_period }}
         run: |
-          if[ -z "${{ secrets.GH_PAT }}" ]; then
+          if [ -z "${{ secrets.GH_PAT }}" ]; then
             export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
           else
             export GH_TOKEN="${{ secrets.GH_PAT }}"
@@ -3171,7 +3173,7 @@ jobs:
           max_cycles=${NUM_CYCLES}
           wait_time=${WAIT_PERIOD}
           
-          if [ "$current" -lt "$max_cycles" ]; then
+          if[ "$current" -lt "$max_cycles" ]; then
             next_cycle=$((current + 1))
             echo "=========================================================="
             echo "Cycle $current of $max_cycles completed."
