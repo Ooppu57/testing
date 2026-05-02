@@ -456,8 +456,8 @@ jobs:
                   if resp.status_code == 200:
                       data = resp.json()
                       if "ip" in data:
-                          cc = data.get("country") or "US"
-                          tz = data.get("timezone") or "UTC"
+                          cc = data.get("country", "US")
+                          tz = data.get("timezone", "UTC")
                           return {
                               **pinfo,
                               'working': True, 'country_code': cc, 'country_name': data.get('region') or cc, 'ip': data.get("ip") or 'unknown', 
@@ -540,7 +540,7 @@ jobs:
                       active_proxy = res
                       active_proxy['proxy_type_label'] = 'manual'
                       use_proxy = True
-                      print(f"SUCCESS: Active manual proxy found -> IP: {res['ip']} | CC: {res['country_code']}")
+                      print(f"SUCCESS: Active manual proxy found -> IP: {res['ip']} | CC: {res.get('country_code', 'US')}")
                       break
                   else:
                       print("Proxy failed geography test or connection. Proceeding to next assigned proxy in stride mapping.")
@@ -3153,7 +3153,7 @@ jobs:
 
   next_cycle:
     name: Trigger Next Cycle
-    needs: [prepare_matrix, remote_session]
+    needs:[prepare_matrix, remote_session]
     if: always() && github.event_name == 'workflow_dispatch' && needs.prepare_matrix.outputs.has_tasks == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -3163,7 +3163,7 @@ jobs:
           NUM_CYCLES: ${{ inputs.num_run_cycles }}
           WAIT_PERIOD: ${{ inputs.wait_period }}
         run: |
-          if [ -z "${{ secrets.GH_PAT }}" ]; then
+          if[ -z "${{ secrets.GH_PAT }}" ]; then
             export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
           else
             export GH_TOKEN="${{ secrets.GH_PAT }}"
