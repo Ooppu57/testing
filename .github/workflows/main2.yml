@@ -2353,82 +2353,219 @@ jobs:
               log_msg("PostInstall-OPGX", "=== Opera GX Post-Install Sequence Starting ===")
               desktop = Desktop(backend="uia")
 
-              opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label="init")
-              time.sleep(0.5)
+              # STEP 1: Dedicated GX window search (up to 60 attempts / 120s)
+              log_msg("PostInstall-OPGX", "STEP 1: Searching for Opera GX window (up to 120 seconds)...")
+              gx_window = None
+              for attempt in range(1, 61):
+                  log_msg("PostInstall-OPGX", f"  GX window search attempt {attempt}/60...")
+                  try:
+                      desktop = Desktop(backend="uia")
+                      for w in desktop.windows(visible_only=True):
+                          wt = w.window_text() or ""
+                          wt_lower = wt.lower()
+                          if ("opera gx" in wt_lower or
+                                  ("opera" in wt_lower and "gx" in wt_lower) or
+                                  "speed dial" in wt_lower or
+                                  "start page" in wt_lower or
+                                  "welcome" in wt_lower) and \
+                             "edge" not in wt_lower and \
+                             "chrome" not in wt_lower and \
+                             "microsoft" not in wt_lower:
+                              gx_window = w
+                              log_msg("PostInstall-OPGX", f"  Found GX window on attempt {attempt}: '{wt}'")
+                              break
+                  except Exception as e:
+                      log_msg("PostInstall-OPGX", f"  Window search error on attempt {attempt}: {e}")
+                  if gx_window:
+                      break
+                  time.sleep(2)
 
+              if gx_window is None:
+                  log_msg("PostInstall-OPGX", "STEP 1 WARNING: Opera GX window not found after 60 attempts. Using passed-in window as fallback.")
+                  gx_window = opera_window
+              else:
+                  log_msg("PostInstall-OPGX", f"STEP 1 COMPLETE: GX window confirmed: '{gx_window.window_text() if gx_window else chr(78)+chr(111)+chr(110)+chr(101)}'")
+
+              # STEP 2: Full-screen maximize
+              log_msg("PostInstall-OPGX", "STEP 2: Applying full-screen maximize to GX window...")
+              desktop = Desktop(backend="uia")
+              maximized = robust_maximize_opera_window(desktop, "opera_gx", label="step2-gx-fullscreen")
+              if maximized is None:
+                  log_msg("PostInstall-OPGX", "STEP 2 WARNING: robust_maximize returned None, keeping existing gx_window ref.")
+              else:
+                  gx_window = maximized
+                  log_msg("PostInstall-OPGX", f"STEP 2 COMPLETE: GX window maximized: '{gx_window.window_text() if gx_window else str(None)}'")
+
+              # STEP 3: 5-second settle wait
+              log_msg("PostInstall-OPGX", "STEP 3: Waiting 5 seconds for GX onboarding UI to settle...")
+              for s in range(1, 6):
+                  log_msg("PostInstall-OPGX", f"  Settle wait: {s}/5 seconds...")
+                  time.sleep(1)
+              log_msg("PostInstall-OPGX", "STEP 3 COMPLETE.")
+
+              # STEP 4: Double-click center screen to engage onboarding
               sw, sh = pyautogui.size()
               cx, cy = sw // 2, sh // 2
-
-              log_msg("PostInstall-OPGX", f"Double-clicking center screen ({cx}, {cy})...")
+              log_msg("PostInstall-OPGX", f"STEP 4: Double-clicking center screen ({cx}, {cy}) to engage GX onboarding...")
               try:
-                  opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label="pre-dblclick")
+                  desktop = Desktop(backend="uia")
+                  gx_window = force_maximize_and_focus_target(desktop, gx_window, "opera_gx", label="step4-pre-dblclick")
+                  pyautogui.moveTo(cx, cy, duration=0.3)
+                  time.sleep(0.2)
                   pyautogui.click(cx, cy)
-                  time.sleep(0.15)
+                  time.sleep(0.2)
                   pyautogui.click(cx, cy)
-                  log_msg("PostInstall-OPGX", "Double-click executed.")
+                  log_msg("PostInstall-OPGX", "STEP 4 COMPLETE: Double-click executed.")
               except Exception as e:
-                  log_msg("PostInstall-OPGX", f"Double-click failed: {e}")
+                  log_msg("PostInstall-OPGX", f"STEP 4 ERROR: Double-click failed: {e}")
 
-              d = random.uniform(2.0, 3.0)
-              time.sleep(d)
+              # STEP 5: 3-second wait after double-click
+              log_msg("PostInstall-OPGX", "STEP 5: Waiting 3 seconds after double-click...")
+              for s in range(1, 4):
+                  log_msg("PostInstall-OPGX", f"  Post-dblclick wait: {s}/3 seconds...")
+                  time.sleep(1)
+              log_msg("PostInstall-OPGX", "STEP 5 COMPLETE.")
 
-              log_msg("PostInstall-OPGX", "Pressing TAB key 4 times (1-2s delay each)...")
+              # STEP 6: TAB x4 through the GX color/theme picker
+              log_msg("PostInstall-OPGX", "STEP 6: Pressing TAB key 4 times to navigate GX theme picker (1-2s delay each)...")
               for i in range(1, 5):
-                  opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"pre-TAB4-{i}")
+                  desktop = Desktop(backend="uia")
+                  gx_window = force_maximize_and_focus_target(desktop, gx_window, "opera_gx", label=f"step6-TAB4-{i}")
                   log_msg("PostInstall-OPGX", f"  Sending TAB ({i}/4)...")
                   send_keys('{TAB}')
                   d = random.uniform(1.0, 2.0)
+                  log_msg("PostInstall-OPGX", f"  TAB {i}/4 sent. Waiting {d:.1f}s...")
                   time.sleep(d)
+              log_msg("PostInstall-OPGX", "STEP 6 COMPLETE: TAB x4 done.")
 
-              log_msg("PostInstall-OPGX", "Pressing ENTER key 8 times (1-2s delay each)...")
+              # STEP 7: ENTER x8 to advance through GX onboarding screens
+              log_msg("PostInstall-OPGX", "STEP 7: Pressing ENTER key 8 times to advance GX onboarding screens (1-2s delay each)...")
               for i in range(1, 9):
-                  opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"ENTER8-{i}")
+                  desktop = Desktop(backend="uia")
+                  gx_window = force_maximize_and_focus_target(desktop, gx_window, "opera_gx", label=f"step7-ENTER8-{i}")
                   log_msg("PostInstall-OPGX", f"  Sending ENTER ({i}/8)...")
                   send_keys('{ENTER}')
                   d = random.uniform(1.0, 2.0)
+                  log_msg("PostInstall-OPGX", f"  ENTER {i}/8 sent. Waiting {d:.1f}s...")
                   time.sleep(d)
+              log_msg("PostInstall-OPGX", "STEP 7 COMPLETE: ENTER x8 done.")
 
-              d = random.uniform(2.0, 3.0)
-              time.sleep(d)
+              # STEP 8: 3-second settle wait
+              log_msg("PostInstall-OPGX", "STEP 8: Waiting 3 seconds for GX to settle after ENTERs...")
+              for s in range(1, 4):
+                  log_msg("PostInstall-OPGX", f"  Post-ENTER wait: {s}/3 seconds...")
+                  time.sleep(1)
+              log_msg("PostInstall-OPGX", "STEP 8 COMPLETE.")
 
-              log_msg("PostInstall-OPGX", "Pressing TAB key 6 times (1-2s delay each)...")
+              # STEP 9: TAB x6 to reach the final confirmation button
+              log_msg("PostInstall-OPGX", "STEP 9: Pressing TAB key 6 times to reach confirmation button (1-2s delay each)...")
               for i in range(1, 7):
-                  opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"TAB6-{i}")
+                  desktop = Desktop(backend="uia")
+                  gx_window = force_maximize_and_focus_target(desktop, gx_window, "opera_gx", label=f"step9-TAB6-{i}")
                   log_msg("PostInstall-OPGX", f"  Sending TAB ({i}/6)...")
                   send_keys('{TAB}')
                   d = random.uniform(1.0, 2.0)
+                  log_msg("PostInstall-OPGX", f"  TAB {i}/6 sent. Waiting {d:.1f}s...")
                   time.sleep(d)
+              log_msg("PostInstall-OPGX", "STEP 9 COMPLETE: TAB x6 done.")
 
-              opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label="post-TAB6-ENTER")
-              log_msg("PostInstall-OPGX", "Sending ENTER...")
+              # STEP 10: ENTER to confirm and open main GX browser
+              log_msg("PostInstall-OPGX", "STEP 10: Pressing ENTER to confirm and open main GX browser...")
+              desktop = Desktop(backend="uia")
+              gx_window = force_maximize_and_focus_target(desktop, gx_window, "opera_gx", label="step10-final-ENTER")
               send_keys('{ENTER}')
-              log_msg("PostInstall-OPGX", "Waiting 5 seconds...")
+              log_msg("PostInstall-OPGX", "STEP 10 COMPLETE: Final ENTER sent.")
+
+              # STEP 11: Wait 5 seconds for main browser window to open
+              log_msg("PostInstall-OPGX", "STEP 11: Waiting 5 seconds for GX main browser window to open...")
               for s in range(1, 6):
                   if s % 2 == 0:
-                      opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"wait5-{s}")
+                      desktop = Desktop(backend="uia")
+                      gx_window = force_maximize_and_focus_target(desktop, gx_window, "opera_gx", label=f"step11-wait-{s}")
+                  log_msg("PostInstall-OPGX", f"  Post-confirm wait: {s}/5 seconds...")
                   time.sleep(1)
+              log_msg("PostInstall-OPGX", "STEP 11 COMPLETE.")
 
-              for tab_count in range(7, 17):
-                  opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"pre-CtrlT-{tab_count}")
-                  log_msg("PostInstall-OPGX", f"Sending Ctrl+T for cycle TAB {tab_count}...")
+              # STEP 12: Re-acquire GX window after onboarding closes
+              log_msg("PostInstall-OPGX", "STEP 12: Re-acquiring GX window after onboarding completion...")
+              for reacquire_attempt in range(1, 16):
+                  log_msg("PostInstall-OPGX", f"  Re-acquire attempt {reacquire_attempt}/15...")
+                  try:
+                      desktop = Desktop(backend="uia")
+                      for w in desktop.windows(visible_only=True):
+                          wt = w.window_text() or ""
+                          wt_lower = wt.lower()
+                          if ("opera gx" in wt_lower or
+                                  ("opera" in wt_lower and "gx" in wt_lower) or
+                                  "speed dial" in wt_lower or
+                                  "start page" in wt_lower) and \
+                             "edge" not in wt_lower and \
+                             "chrome" not in wt_lower and \
+                             "microsoft" not in wt_lower:
+                              gx_window = w
+                              log_msg("PostInstall-OPGX", f"  GX window re-acquired: '{wt}'")
+                              break
+                  except Exception as e:
+                      log_msg("PostInstall-OPGX", f"  Re-acquire error: {e}")
+                  if gx_window:
+                      break
+                  time.sleep(2)
+              log_msg("PostInstall-OPGX", "STEP 12 COMPLETE.")
+
+              # STEP 13: TAB cycle (7 -> 16) with Ctrl+T, TABs, ENTER, 5s waits
+              log_msg("PostInstall-OPGX", "STEP 13: Starting TAB cycle sequence (7 TABs -> 16 TABs)...")
+              tab_sequence = list(range(7, 17))
+              log_msg("PostInstall-OPGX", f"  TAB sequence plan: {tab_sequence}")
+
+              for cycle_idx, tab_count in enumerate(tab_sequence):
+                  log_msg("PostInstall-OPGX", f"--- GX TAB CYCLE {cycle_idx + 1}/{len(tab_sequence)}: {tab_count} TAB presses ---")
+
+                  desktop = Desktop(backend="uia")
+                  gx_window = force_maximize_and_focus_target(desktop, gx_window, "opera_gx", label=f"cycle{cycle_idx+1}-pre-CtrlT")
+                  log_msg("PostInstall-OPGX", f"  Cycle {cycle_idx + 1}: Pressing Ctrl+T (open new tab)...")
                   send_keys('^t')
-                  log_msg("PostInstall-OPGX", f"Pressing TAB key {tab_count} times (1-2s delay each)...")
-                  for i in range(1, tab_count + 1):
-                      opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"TAB{tab_count}-{i}")
-                      log_msg("PostInstall-OPGX", f"  Sending TAB ({i}/{tab_count})...")
-                      send_keys('{TAB}')
-                      d = random.uniform(1.0, 2.0)
-                      time.sleep(d)
-                  opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"post-TAB{tab_count}-ENTER")
-                  log_msg("PostInstall-OPGX", f"Sending ENTER after {tab_count} TABs...")
-                  send_keys('{ENTER}')
-                  log_msg("PostInstall-OPGX", "Waiting 5 seconds...")
+                  log_msg("PostInstall-OPGX", f"  Cycle {cycle_idx + 1}: Ctrl+T sent. Waiting 5 seconds...")
                   for s in range(1, 6):
-                      if s % 2 == 0:
-                          opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"wait5-loop{tab_count}-{s}")
+                      log_msg("PostInstall-OPGX", f"    Pre-TAB wait: {s}/5 seconds...")
                       time.sleep(1)
 
+                  log_msg("PostInstall-OPGX", f"  Pressing TAB {tab_count} times (1-2s delay each)...")
+                  for i in range(1, tab_count + 1):
+                      desktop = Desktop(backend="uia")
+                      gx_window = force_maximize_and_focus_target(desktop, gx_window, "opera_gx", label=f"cycle{cycle_idx+1}-TAB{tab_count}-press{i}")
+                      log_msg("PostInstall-OPGX", f"    TAB press {i}/{tab_count} (cycle {cycle_idx + 1})...")
+                      send_keys('{TAB}')
+                      d = random.uniform(1.0, 2.0)
+                      log_msg("PostInstall-OPGX", f"    TAB {i}/{tab_count} sent. Waiting {d:.1f}s...")
+                      time.sleep(d)
+
+                  desktop = Desktop(backend="uia")
+                  gx_window = force_maximize_and_focus_target(desktop, gx_window, "opera_gx", label=f"cycle{cycle_idx+1}-ENTER")
+                  log_msg("PostInstall-OPGX", f"  Cycle {cycle_idx + 1}: Pressing ENTER after {tab_count} TABs...")
+                  send_keys('{ENTER}')
+                  log_msg("PostInstall-OPGX", f"  Cycle {cycle_idx + 1}: ENTER sent.")
+
+                  log_msg("PostInstall-OPGX", f"  Cycle {cycle_idx + 1}: Waiting 5 seconds after ENTER...")
+                  for s in range(1, 6):
+                      if s % 2 == 0:
+                          desktop = Desktop(backend="uia")
+                          gx_window = force_maximize_and_focus_target(desktop, gx_window, "opera_gx", label=f"cycle{cycle_idx+1}-wait{s}")
+                      log_msg("PostInstall-OPGX", f"    Post-ENTER wait: {s}/5 seconds...")
+                      time.sleep(1)
+
+                  desktop = Desktop(backend="uia")
+                  gx_window = force_maximize_and_focus_target(desktop, gx_window, "opera_gx", label=f"cycle{cycle_idx+1}-post-CtrlT")
+                  log_msg("PostInstall-OPGX", f"  Cycle {cycle_idx + 1}: Pressing Ctrl+T (post-cycle)...")
+                  send_keys('^t')
+                  log_msg("PostInstall-OPGX", f"  Cycle {cycle_idx + 1}: Post-cycle Ctrl+T sent. Waiting 5 seconds...")
+                  for s in range(1, 6):
+                      log_msg("PostInstall-OPGX", f"    Post-CtrlT wait: {s}/5 seconds...")
+                      time.sleep(1)
+                  log_msg("PostInstall-OPGX", f"--- GX TAB CYCLE {cycle_idx + 1}/{len(tab_sequence)} COMPLETE ---")
+
+              log_msg("PostInstall-OPGX", "STEP 13 COMPLETE: All GX TAB cycles finished.")
               log_msg("PostInstall-OPGX", "=== Opera GX Post-Install Sequence Completed Successfully ===")
+
 
           def avg_post_install_sequence(avg_window):
               log_msg("PostInstall-AVG", "=== AVG Post-Install Sequence Starting ===")
@@ -2514,6 +2651,7 @@ jobs:
               opera_one_installer_executed_time = None
               opera_one_post_install_done = False
 
+              opera_gx_window = None
               opera_gx_installer_executed_time = None
               opera_gx_post_install_done = False
 
@@ -2539,6 +2677,7 @@ jobs:
                       desktop = Desktop(backend="uia")
                       edge_window = None
                       opera_window = None
+                      opera_gx_window = None
                       avg_window = None
 
                       for window in desktop.windows(visible_only=True):
@@ -2549,6 +2688,9 @@ jobs:
                           if "Opera" in wt or "Speed Dial" in wt or "Start Page" in wt or "Welcome" in wt:
                               if "Microsoft Edge" not in wt and "Edge" not in wt and "Chrome Web Store" not in wt:
                                   opera_window = window
+                                  wt_lower_gx = wt.lower()
+                                  if "opera gx" in wt_lower_gx or ("opera" in wt_lower_gx and "gx" in wt_lower_gx):
+                                      opera_gx_window = window
                           if "AVG" in wt:
                               avg_window = window
 
@@ -2647,7 +2789,8 @@ jobs:
                                       opera_gx_post_install_done = True
                                   else:
                                       log_msg("PostInstall-OPGX", "40s threshold reached. Launching Opera GX post-install.")
-                                      opera_gx_post_install_sequence(opera_window)
+                                      gx_win_to_pass = opera_gx_window if opera_gx_window is not None else opera_window
+                                      opera_gx_post_install_sequence(gx_win_to_pass)
                                       opera_gx_post_install_done = True
 
                       if software_type == "avg" and action_mode == "install" and not avg_post_install_done:
