@@ -1,0 +1,3591 @@
+name: Parallel Windows Auto-Installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      os_version:
+        description: 'Select OS Runner Version'
+        required: true
+        type: choice
+        options:
+          - 'windows-2025'
+          - 'windows-2022'
+          - 'windows-11-arm'
+        default: 'windows-2025'
+      getscreen_email:
+        description: 'Getscreen.me Account Email'
+        required: true
+        type: string
+        default: 'techx@highmail.site'
+      num_devices:
+        description: 'Number of Devices to Spawn (Concurrency)'
+        required: true
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '5'
+          - '6'
+          - '7'
+          - '8'
+          - '9'
+          - '10'
+        default: '5'
+      num_installs:
+        description: 'Number of Installs (per cycle)'
+        required: true
+        type: choice
+        options:
+          - '0'
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '5'
+          - '6'
+          - '7'
+          - '8'
+          - '9'
+          - '10'
+        default: '5'
+      num_clicks:
+        description: 'Number of Clicks (per cycle)'
+        required: true
+        type: choice
+        options:
+          - '0'
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '5'
+          - '6'
+          - '7'
+          - '8'
+          - '9'
+          - '10'
+        default: '1'
+      num_run_cycles:
+        description: 'Number of Run Cycles'
+        required: true
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '5'
+          - '6'
+          - '7'
+          - '8'
+          - '9'
+          - '10'
+        default: '1'
+      wait_period:
+        description: 'Wait Period Between Cycles (Minutes)'
+        required: true
+        type: choice
+        options:
+          - '0'
+          - '2'
+          - '4'
+          - '6'
+          - '8'
+          - '10'
+        default: '0'
+      current_cycle:
+        description: 'Current Cycle (System Use Only)'
+        required: true
+        type: string
+        default: '1'
+      software_choice:
+        description: 'Select Software & Link'
+        required: true
+        type: choice
+        options:
+          - 'AVG - TechxTrader'
+          - 'AVG - B4Books'
+          - 'AVG - F.Ahmad'
+          - 'OperaGX - B4Books'
+          - 'Opera - Techx'
+          - 'Opera - Fatradez'
+          - 'Opera - James'
+          - 'Opera - Oliver'
+          - 'Opera - Mahal'
+          - 'Opera - Polar'
+          - 'Opera-One - Esmeel'
+          - 'Opera-One - Harrari'
+          - 'Opera-One - Chloe'
+          - 'Opera-One - Daisy'
+          - 'Opera-One - Jimmy'
+          - 'Ad-MVN - Techx'
+          - 'Ad-MVN - B4Books'
+          - 'Ad-MVN - Orderflowz'
+          - 'Ad-MVN - A2Z'
+        default: 'Opera - Fatradez'
+      manual_software_url:
+        description: 'Manual Software URL'
+        required: false
+        type: string
+        default: ''
+      run_manual_link:
+        description: 'Run manual link'
+        required: true
+        type: boolean
+        default: false
+      scrapeops_api_key:
+        description: 'ScrapeOps / FloppyData / Manual Proxies'
+        required: false
+        type: string
+        default: '1IFG1IFjMPZi4DcrQ16KF2ku_fbxeCXI'
+      use_without_proxy:
+        description: 'Run without proxy'
+        required: true
+        type: boolean
+        default: false
+      proxy_country:
+        description: 'Proxy Country Geotargeting'
+        required: true
+        type: choice
+        options:
+          - 'USA'
+          - 'UK'
+          - 'Canada'
+          - 'Australia'
+          - 'Germany'
+          - 'France'
+          - 'Brazil'
+          - 'Mexico'
+          - 'Spain'
+          - 'Vietnam'
+          - 'Switzerland'
+          - 'Indonesia'
+          - 'Italy'
+          - 'Netherlands'
+          - 'Poland'
+        default: 'Brazil'
+      mobile_proxies:
+        description: 'Use Mobile Proxies'
+        required: true
+        type: boolean
+        default: false
+      sticky_sessions:
+        description: 'Enable Unique Sticky Sessions'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  prepare_matrix:
+    name: Check Inputs & Prepare Runners
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has_tasks: ${{ steps.set-matrix.outputs.has_tasks }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Generate Dynamic Matrix & Proxy Config
+        id: set-matrix
+        shell: python
+        env:
+          EMAIL: ${{ inputs.getscreen_email }}
+          NUM_DEVICES: ${{ inputs.num_devices }}
+          NUM_INSTALLS: ${{ inputs.num_installs }}
+          NUM_CLICKS: ${{ inputs.num_clicks }}
+          NUM_CYCLES: ${{ inputs.num_run_cycles }}
+          CURRENT_CYCLE: ${{ inputs.current_cycle }}
+          OS_VERSION: ${{ inputs.os_version }}
+          SOFTWARE_CHOICE: ${{ inputs.software_choice }}
+          MANUAL_URL: ${{ inputs.manual_software_url }}
+          RUN_MANUAL: ${{ inputs.run_manual_link }}
+          API_KEY: ${{ inputs.scrapeops_api_key }}
+          WITHOUT_PROXY: ${{ inputs.use_without_proxy }}
+          COUNTRY: ${{ inputs.proxy_country }}
+          MOBILE: ${{ inputs.mobile_proxies }}
+          STICKY: ${{ inputs.sticky_sessions }}
+        run: |
+          import os, json, uuid, random, re, sys, subprocess, time
+
+          print("========== INITIALIZING MATRIX GENERATION ==========")
+
+          try:
+              import requests
+          except ImportError:
+              subprocess.check_call([sys.executable, "-m", "pip", "install", "requests", "--quiet"])
+              import requests
+
+          num_installs = int(os.environ.get("NUM_INSTALLS", "5"))
+          num_clicks = int(os.environ.get("NUM_CLICKS", "1"))
+          current_cycle = int(os.environ.get("CURRENT_CYCLE", "1"))
+          num_run_cycles = int(os.environ.get("NUM_CYCLES", "1"))
+          
+          tasks_per_cycle = num_installs + num_clicks
+
+          if tasks_per_cycle == 0:
+              print("No tasks configured (installs=0, clicks=0). Exiting.")
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("matrix={\"include\":[]}\n")
+                  f.write("has_tasks=false\n")
+              exit(0)
+          else:
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write("has_tasks=true\n")
+
+          # ── ipinfo.io locale lookup ───────────────────────────────────────────
+          IPINFO_TOKEN = ""   # leave blank to use free tier (50k/mo)
+
+          def get_locale_info_from_proxy(proxy_url, device_label=""):
+              try:
+                  proxies_cfg = {"http": proxy_url, "https": proxy_url}
+                  url = "https://ipinfo.io/json"
+                  if IPINFO_TOKEN:
+                      url += f"?token={IPINFO_TOKEN}"
+                  resp = requests.get(url, proxies=proxies_cfg, timeout=20)
+                  data = resp.json()
+                  ip        = data.get("ip", "")
+                  city      = data.get("city", "")
+                  region    = data.get("region", "")
+                  country   = data.get("country", "US")
+                  tz        = data.get("timezone", "UTC")
+                  org       = data.get("org", "")
+                  loc       = data.get("loc", "0,0")
+                  print(f"[ipinfo][{device_label}] IP={ip} | City={city} | Region={region} | Country={country} | TZ={tz}")
+                  return {
+                      "real_ip": ip, "city": city, "region": region,
+                      "country_code": country.upper(),
+                      "timezone": tz,
+                      "org": org, "loc": loc,
+                  }
+              except Exception as e:
+                  print(f"[ipinfo][{device_label}] FAILED to query ipinfo.io: {e}")
+                  return None
+
+          def country_code_to_locale(cc):
+              _map = {
+                  "US": "en-US", "GB": "en-GB", "CA": "en-CA", "AU": "en-AU",
+                  "DE": "de-DE", "FR": "fr-FR", "BR": "pt-BR", "MX": "es-MX",
+                  "ES": "es-ES", "VN": "vi-VN", "CH": "de-CH", "ID": "id-ID",
+                  "IT": "it-IT", "NL": "nl-NL", "PL": "pl-PL",
+                  "AR": "es-AR", "CL": "es-CL", "CO": "es-CO",
+                  "IN": "hi-IN", "JP": "ja-JP", "KR": "ko-KR",
+                  "CN": "zh-CN", "TW": "zh-TW", "RU": "ru-RU",
+                  "TR": "tr-TR", "SA": "ar-SA", "AE": "ar-AE",
+                  "ZA": "en-ZA", "NG": "en-NG", "KE": "en-KE",
+                  "PH": "fil-PH", "TH": "th-TH", "MY": "ms-MY",
+                  "SG": "en-SG", "HK": "zh-HK", "PT": "pt-PT",
+                  "RO": "ro-RO", "HU": "hu-HU", "CZ": "cs-CZ",
+                  "SK": "sk-SK", "UA": "uk-UA", "GR": "el-GR",
+                  "SE": "sv-SE", "NO": "nb-NO", "DK": "da-DK",
+                  "FI": "fi-FI", "BE": "nl-BE", "AT": "de-AT",
+                  "NZ": "en-NZ", "IE": "en-IE",
+              }
+              return _map.get(cc.upper(), "en-US")
+
+          def country_code_to_keyboard(cc):
+              _map = {
+                  "US": "0409:00000409", "GB": "0809:00000809", "CA": "1009:00000409",
+                  "AU": "0C09:00000409", "DE": "0407:00000407", "FR": "040C:0000040C",
+                  "BR": "0416:00000416", "MX": "080A:0000080A", "ES": "0C0A:0000080A",
+                  "VN": "042A:0000042A", "CH": "0807:00000807", "ID": "0421:00000409",
+                  "IT": "0410:00000410", "NL": "0413:00020409", "PL": "0415:00000415",
+                  "AR": "2C0A:0000080A", "IN": "0409:00000409",
+                  "JP": "0411:{03B5835F-F03C-411B-9CE2-AA23E1171E36}{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}",
+                  "KR": "0412:{A028AE76-01B1-46C2-99C4-ACD9858AE02F}{B5FE1F02-D5F2-4445-9C03-C568F23C99A1}",
+                  "RU": "0419:00000419", "TR": "041F:0000041F",
+                  "SA": "0401:00000401", "AE": "3801:00000401",
+                  "PT": "0816:00000816", "RO": "0418:00000418",
+                  "HU": "040E:0000040E", "CZ": "0405:00000405",
+                  "SK": "041B:0000041B", "UA": "0422:00000422",
+                  "GR": "0408:00000408", "SE": "041D:0000041D",
+                  "NO": "0414:00000414", "DK": "0406:00000406",
+                  "FI": "040B:0000040B", "NL_BE": "080C:0000080C",
+                  "BE": "080C:0000080C", "AT": "0C07:00000407",
+              }
+              return _map.get(cc.upper(), "0409:00000409")
+
+          def tz_to_windows_tz(iana_tz):
+              _map = {
+                  "America/New_York":       "Eastern Standard Time",
+                  "America/Chicago":        "Central Standard Time",
+                  "America/Denver":         "Mountain Standard Time",
+                  "America/Phoenix":        "US Mountain Standard Time",
+                  "America/Los_Angeles":    "Pacific Standard Time",
+                  "America/Anchorage":      "Alaskan Standard Time",
+                  "America/Adak":           "Hawaiian Standard Time",
+                  "Pacific/Honolulu":       "Hawaiian Standard Time",
+                  "America/Toronto":        "Eastern Standard Time",
+                  "America/Vancouver":      "Pacific Standard Time",
+                  "America/Winnipeg":       "Central Standard Time",
+                  "America/Halifax":        "Atlantic Standard Time",
+                  "America/St_Johns":       "Newfoundland Standard Time",
+                  "America/Sao_Paulo":      "E. South America Standard Time",
+                  "America/Manaus":         "SA Western Standard Time",
+                  "America/Belem":          "SA Eastern Standard Time",
+                  "America/Fortaleza":      "SA Eastern Standard Time",
+                  "America/Recife":         "SA Eastern Standard Time",
+                  "America/Bahia":          "Bahia Standard Time",
+                  "America/Mexico_City":    "Central Standard Time (Mexico)",
+                  "America/Monterrey":      "Central Standard Time (Mexico)",
+                  "America/Tijuana":        "Pacific Standard Time (Mexico)",
+                  "America/Bogota":         "SA Pacific Standard Time",
+                  "America/Lima":           "SA Pacific Standard Time",
+                  "America/Santiago":       "Pacific SA Standard Time",
+                  "America/Buenos_Aires":   "Argentina Standard Time",
+                  "America/Argentina/Buenos_Aires": "Argentina Standard Time",
+                  "America/Caracas":        "Venezuela Standard Time",
+                  "America/La_Paz":         "SA Western Standard Time",
+                  "America/Asuncion":       "Paraguay Standard Time",
+                  "America/Montevideo":     "Montevideo Standard Time",
+                  "America/Guayaquil":      "SA Pacific Standard Time",
+                  "Europe/London":          "GMT Standard Time",
+                  "Europe/Dublin":          "GMT Standard Time",
+                  "Europe/Lisbon":          "GMT Standard Time",
+                  "Atlantic/Reykjavik":     "Greenwich Standard Time",
+                  "Europe/Paris":           "Romance Standard Time",
+                  "Europe/Berlin":          "W. Europe Standard Time",
+                  "Europe/Amsterdam":       "W. Europe Standard Time",
+                  "Europe/Brussels":        "Romance Standard Time",
+                  "Europe/Madrid":          "Romance Standard Time",
+                  "Europe/Rome":            "W. Europe Standard Time",
+                  "Europe/Vienna":          "W. Europe Standard Time",
+                  "Europe/Zurich":          "W. Europe Standard Time",
+                  "Europe/Stockholm":       "W. Europe Standard Time",
+                  "Europe/Oslo":            "W. Europe Standard Time",
+                  "Europe/Copenhagen":      "Romance Standard Time",
+                  "Europe/Helsinki":        "FLE Standard Time",
+                  "Europe/Warsaw":          "Central European Standard Time",
+                  "Europe/Prague":          "Central Europe Standard Time",
+                  "Europe/Budapest":        "Central Europe Standard Time",
+                  "Europe/Bratislava":      "Central Europe Standard Time",
+                  "Europe/Bucharest":       "GTB Standard Time",
+                  "Europe/Athens":          "GTB Standard Time",
+                  "Europe/Sofia":           "FLE Standard Time",
+                  "Europe/Kiev":            "FLE Standard Time",
+                  "Europe/Kyiv":            "FLE Standard Time",
+                  "Europe/Riga":            "FLE Standard Time",
+                  "Europe/Tallinn":         "FLE Standard Time",
+                  "Europe/Vilnius":         "FLE Standard Time",
+                  "Europe/Minsk":           "Belarus Standard Time",
+                  "Europe/Moscow":          "Russia Time Zone 3",
+                  "Europe/Kaliningrad":     "Kaliningrad Standard Time",
+                  "Europe/Istanbul":        "Turkey Standard Time",
+                  "Asia/Dubai":             "Arabian Standard Time",
+                  "Asia/Riyadh":            "Arab Standard Time",
+                  "Asia/Kuwait":            "Arab Standard Time",
+                  "Asia/Baghdad":           "Arabic Standard Time",
+                  "Asia/Tehran":            "Iran Standard Time",
+                  "Asia/Kabul":             "Afghanistan Standard Time",
+                  "Asia/Karachi":           "Pakistan Standard Time",
+                  "Asia/Kolkata":           "India Standard Time",
+                  "Asia/Calcutta":          "India Standard Time",
+                  "Asia/Colombo":           "Sri Lanka Standard Time",
+                  "Asia/Kathmandu":         "Nepal Standard Time",
+                  "Asia/Dhaka":             "Bangladesh Standard Time",
+                  "Asia/Rangoon":           "Myanmar Standard Time",
+                  "Asia/Yangon":            "Myanmar Standard Time",
+                  "Asia/Bangkok":           "SE Asia Standard Time",
+                  "Asia/Ho_Chi_Minh":       "SE Asia Standard Time",
+                  "Asia/Jakarta":           "SE Asia Standard Time",
+                  "Asia/Singapore":         "Singapore Standard Time",
+                  "Asia/Kuala_Lumpur":      "Singapore Standard Time",
+                  "Asia/Manila":            "Singapore Standard Time",
+                  "Asia/Hong_Kong":         "China Standard Time",
+                  "Asia/Shanghai":          "China Standard Time",
+                  "Asia/Taipei":            "Taipei Standard Time",
+                  "Asia/Ulaanbaatar":       "Ulaanbaatar Standard Time",
+                  "Asia/Seoul":             "Korea Standard Time",
+                  "Asia/Tokyo":             "Tokyo Standard Time",
+                  "Asia/Yakutsk":           "Yakutsk Standard Time",
+                  "Asia/Vladivostok":       "Vladivostok Standard Time",
+                  "Asia/Magadan":           "Magadan Standard Time",
+                  "Asia/Kamchatka":         "Kamchatka Standard Time",
+                  "Pacific/Auckland":       "New Zealand Standard Time",
+                  "Pacific/Fiji":           "Fiji Standard Time",
+                  "Pacific/Guam":           "West Pacific Standard Time",
+                  "Pacific/Port_Moresby":   "West Pacific Standard Time",
+                  "Australia/Sydney":       "AUS Eastern Standard Time",
+                  "Australia/Melbourne":    "AUS Eastern Standard Time",
+                  "Australia/Brisbane":     "E. Australia Standard Time",
+                  "Australia/Adelaide":     "Cen. Australia Standard Time",
+                  "Australia/Perth":        "W. Australia Standard Time",
+                  "Australia/Darwin":       "AUS Central Standard Time",
+                  "Africa/Nairobi":         "E. Africa Standard Time",
+                  "Africa/Lagos":           "W. Central Africa Standard Time",
+                  "Africa/Cairo":           "Egypt Standard Time",
+                  "Africa/Johannesburg":    "South Africa Standard Time",
+                  "Africa/Casablanca":      "Morocco Standard Time",
+                  "Africa/Abidjan":         "Greenwich Standard Time",
+                  "UTC":                    "UTC",
+              }
+              result = _map.get(iana_tz)
+              if result:
+                  return result
+              for k, v in _map.items():
+                  if iana_tz.startswith(k.split("/")[0] + "/"):
+                      return v
+              return "UTC"
+
+          email = os.environ.get("EMAIL", "").strip()
+          os_version = os.environ.get("OS_VERSION", "windows-2025")
+
+          proxy_input = os.environ.get("API_KEY", "").strip()
+          without_proxy = os.environ.get("WITHOUT_PROXY", "false").lower() == "true"
+
+          is_manual_proxy = False
+          is_floppy_key = False
+          is_scrapeops_key = False
+
+          manual_proxy_strings = []
+          scrapeops_keys = []
+          floppy_keys =[]
+
+          SCRAPEOPS_KEY_RE = re.compile(
+              r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
+          FLOPPY_KEY_RE = re.compile(r'^[A-Za-z0-9_]{30,80}$')
+
+          if without_proxy:
+              print("[Proxy] 'Run without proxy' checked. Disabling proxy.")
+              proxy_input = ""
+          elif not proxy_input or proxy_input.lower() in ["none", "null", "false", "blank", "empty", "''", '""']:
+              print("[Proxy] Proxy input empty or invalid. Disabling proxy.")
+              proxy_input = ""
+          else:
+              raw_items = re.split(r'[\s,;]+', proxy_input)
+              for item in raw_items:
+                  item = item.strip()
+                  if not item:
+                      continue
+                  if ('://' in item) or ('@' in item) or (item.count(':') >= 2 and len(item) > 10):
+                      manual_proxy_strings.append(item)
+                  elif SCRAPEOPS_KEY_RE.match(item):
+                      scrapeops_keys.append(item)
+                  elif FLOPPY_KEY_RE.match(item):
+                      floppy_keys.append(item)
+                  else:
+                      scrapeops_keys.append(item)
+
+              is_manual_proxy = len(manual_proxy_strings) > 0
+              is_scrapeops_key = len(scrapeops_keys) > 0 and not is_manual_proxy
+              is_floppy_key = len(floppy_keys) > 0 and not is_manual_proxy
+
+          def parse_proxy(proxy_str):
+              original = proxy_str.strip()
+              if not original: return None
+              protocol = 'http'
+              rest = original
+              if '://' in rest:
+                  protocol, rest = rest.split('://', 1)
+                  if protocol.lower() == 'geolocation': protocol = 'http'
+
+              floppy_match = re.match(r'^([^:]+):([^@]+)@([^:]+):(\d+):(.+)$', rest)
+              if floppy_match:
+                  user, pwd, host, port, country_extra = floppy_match.groups()
+                  country = country_extra.split(' - ')[0].strip()
+                  return { 'original': original, 'protocol': protocol, 'username': user, 'password': pwd, 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'country_name': country, 'country_code': None, 'url': f"http://{user}:{pwd}@{host}:{port}" }
+
+              std_match = re.match(r'^([^:]+):([^@]+)@([^:]+):(\d+)$', rest)
+              if std_match:
+                  user, pwd, host, port = std_match.groups()
+                  return { 'original': original, 'protocol': protocol, 'username': user, 'password': pwd, 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'country_name': None, 'country_code': None, 'url': f"{protocol}://{user}:{pwd}@{host}:{port}" }
+
+              alt_match = re.match(r'^([^:]+):(\d+):([^:]+):(.+)$', rest)
+              if alt_match:
+                  host, port, user, pwd = alt_match.groups()
+                  return { 'original': original, 'protocol': protocol, 'username': user, 'password': pwd, 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'country_name': None, 'country_code': None, 'url': f"{protocol}://{user}:{pwd}@{host}:{port}" }
+
+              simple_match = re.match(r'^([^:]+):(\d+)$', rest)
+              if simple_match:
+                  host, port = simple_match.groups()
+                  return { 'original': original, 'protocol': protocol, 'username': '', 'password': '', 'host': host, 'port': int(port), 'server': f"{host}:{port}", 'country_name': None, 'country_code': None, 'url': f"{protocol}://{host}:{port}" }
+              return None
+
+          def validate_proxy_and_locale(pinfo, label=""):
+              locale_data = get_locale_info_from_proxy(pinfo['url'], device_label=label)
+              if locale_data:
+                  cc  = locale_data["country_code"]
+                  tz  = locale_data["timezone"]
+                  win_tz    = tz_to_windows_tz(tz)
+                  win_locale = country_code_to_locale(cc)
+                  win_kb    = country_code_to_keyboard(cc)
+                  print(f"[ProxyCheck][{label}] ACTIVE -> {pinfo.get('server','?')} | IP={locale_data['real_ip']} | {locale_data['city']}, {locale_data['region']}, {cc} | TZ={tz} | WinTZ={win_tz} | Locale={win_locale}")
+                  return {
+                      'working': True, 'country_code': cc, 'country_name': locale_data.get('region') or cc, 'ip': locale_data['real_ip'], 'city': locale_data['city'], 'region': locale_data['region'], 'timezone_iana': tz, 'timezone_windows': win_tz, 'windows_locale': win_locale, 'windows_keyboard': win_kb,
+                      **{k: v for k, v in pinfo.items() if k not in['working','country_code','country_name','ip','city','region','timezone_iana','timezone_windows','windows_locale','windows_keyboard']}
+                  }
+
+              print(f"[ProxyCheck][{label}] ipinfo.io failed, trying ip-api.com fallback...")
+              try:
+                  proxies_cfg = {"http": pinfo['url'], "https": pinfo['url']}
+                  resp = requests.get('http://ip-api.com/json/', proxies=proxies_cfg, timeout=15)
+                  data = resp.json()
+                  if data.get('status') == 'success':
+                      cc  = data.get('countryCode', 'US').upper()
+                      tz  = data.get('timezone', 'UTC')
+                      win_tz    = tz_to_windows_tz(tz)
+                      win_locale = country_code_to_locale(cc)
+                      win_kb    = country_code_to_keyboard(cc)
+                      print(f"[ProxyCheck][{label}] ACTIVE (fallback) -> IP={data.get('query','')} | {data.get('city','')}, {data.get('regionName','')}, {cc} | TZ={tz} | WinTZ={win_tz} | Locale={win_locale}")
+                      return {
+                          'working': True, 'country_code': cc, 'country_name': data.get('country', cc), 'ip': data.get('query', ''), 'city': data.get('city', ''), 'region': data.get('regionName', ''), 'timezone_iana': tz, 'timezone_windows': win_tz, 'windows_locale': win_locale, 'windows_keyboard': win_kb,
+                          **{k: v for k, v in pinfo.items() if k not in['working','country_code','country_name','ip','city','region','timezone_iana','timezone_windows','windows_locale','windows_keyboard']}
+                      }
+              except Exception as e:
+                  print(f"[ProxyCheck][{label}] ip-api.com fallback FAILED: {e}")
+
+              print(f"[ProxyCheck][{label}] DEAD -> {pinfo.get('server','?')}")
+              return {'working': False, **pinfo}
+
+          country_map = {
+              "USA": "us", "UK": "uk", "Canada": "ca", "Australia": "au", "Germany": "de", "France": "fr",
+              "Brazil": "br", "Mexico": "mx", "Spain": "es", "Vietnam": "vn", "Switzerland": "ch", "Indonesia": "id",
+              "Italy": "it", "Netherlands": "nl", "Poland": "pl"
+          }
+          
+          fallback_tz_map = {
+              "US": "America/New_York", "GB": "Europe/London", "CA": "America/Toronto", "AU": "Australia/Sydney", "DE": "Europe/Berlin", "FR": "Europe/Paris", "BR": "America/Sao_Paulo", "MX": "America/Mexico_City", "ES": "Europe/Madrid", "VN": "Asia/Ho_Chi_Minh", "CH": "Europe/Zurich", "ID": "Asia/Jakarta", "IT": "Europe/Rome", "NL": "Europe/Amsterdam", "PL": "Europe/Warsaw"
+          }
+
+          cycle_proxies =[]
+          use_proxy = False
+
+          # ══════════════════════════════════════════════════════════════════════
+          # MANUAL PROXY BLOCK
+          # ══════════════════════════════════════════════════════════════════════
+          if is_manual_proxy and not without_proxy:
+              proxies_needed_total = tasks_per_cycle * current_cycle
+              parsed =[]
+              for ps in manual_proxy_strings:
+                  p = parse_proxy(ps)
+                  if p: parsed.append(p)
+                  
+              active_proxies =[]
+              for idx, p in enumerate(parsed):
+                  if len(active_proxies) >= proxies_needed_total: break
+                  result = validate_proxy_and_locale(p, label=f"manual-{idx+1}")
+                  if result['working']:
+                      result['proxy_type_label'] = 'manual'
+                      active_proxies.append(result)
+                  if idx < len(parsed) - 1:
+                      time.sleep(1)
+
+              cycle_proxies = active_proxies[(current_cycle - 1) * tasks_per_cycle : proxies_needed_total]
+              
+              if len(cycle_proxies) < tasks_per_cycle:
+                  print(f"[Proxy] ERROR: Only {len(cycle_proxies)} active proxies available for Cycle {current_cycle} (Needed {tasks_per_cycle}).")
+                  exit(1)
+              
+              use_proxy = True
+              print(f"[Proxy] Manual proxy pool ready: {len(cycle_proxies)} active for Cycle {current_cycle}.")
+
+          # ══════════════════════════════════════════════════════════════════════
+          # FLOPPYDATA BLOCK
+          # ══════════════════════════════════════════════════════════════════════
+          elif is_floppy_key and not without_proxy:
+              use_proxy = True
+              country_input = os.environ.get("COUNTRY", "USA")
+              mobile = os.environ.get("MOBILE", "false").lower() == "true"
+              sticky = os.environ.get("STICKY", "false").lower() == "true"
+              cc_input = country_map.get(country_input, "us").upper()
+              proxy_type = "mobile" if mobile else "residential"
+
+              FLOPPY_BASE = "https://client-api.floppy.host"
+              raw_floppy_proxies = []
+              floppy_creds_cache = {}
+
+              print(f"[FloppyData] Building {tasks_per_cycle} proxy configs for Cycle {current_cycle}...")
+              for i in range(tasks_per_cycle):
+                  absolute_idx = (current_cycle - 1) * tasks_per_cycle + i
+                  key_idx = absolute_idx // 15
+                  current_key = floppy_keys[key_idx % len(floppy_keys)]
+                  
+                  if current_key not in floppy_creds_cache:
+                      headers = {"X-Api-Key": current_key}
+                      print(f"[FloppyData] Fetching credentials for key ending in ...{current_key[-4:]}")
+                      try:
+                          creds_resp = requests.get(f"{FLOPPY_BASE}/v1/rotating/smartParamsCredentials", headers=headers, timeout=15)
+                          floppy_creds_cache[current_key] = creds_resp.json()
+                      except Exception as e:
+                          print(f"[FloppyData] ERROR fetching credentials: {e}")
+                          exit(1)
+                  
+                  creds_data = floppy_creds_cache[current_key]
+                  floppy_base_user = creds_data.get("username", "")
+                  floppy_base_pass = creds_data.get("password", "")
+                  
+                  params = {"type": proxy_type, "country": cc_input, "protocol": "http", "rotation": "0" if sticky else "-1"}
+                  if sticky: params["session"] = f"cyc{current_cycle}_dev{i+1}_{str(uuid.uuid4())[:8]}"
+
+                  try:
+                      builder_resp = requests.get(f"{FLOPPY_BASE}/v1/rotating/smartParamsBuilder", headers={"X-Api-Key": current_key}, params=params, timeout=15)
+                      builder_data = builder_resp.json()
+                      floppy_user = builder_data.get("username", floppy_base_user)
+                      floppy_pass = builder_data.get("password", floppy_base_pass)
+                      floppy_host = builder_data.get("host", "geo.g-w.info")
+                      floppy_port = str(builder_data.get("port", 10080))
+                      print(f"[FloppyData] Task {i+1} (Key {key_idx}): {floppy_host}:{floppy_port} | session={'YES' if sticky else 'NO'}")
+                  except Exception as e:
+                      print(f"[FloppyData] ERROR building params for device {i+1}: {e}")
+                      exit(1)
+
+                  raw_floppy_proxies.append({
+                      'username': floppy_user, 'password': floppy_pass, 'host': floppy_host, 'port': int(floppy_port),
+                      'server': f"{floppy_host}:{floppy_port}", 'country_code': cc_input.lower(), 'country_name': country_input,
+                      'proxy_type_label': "floppydata", 'url': f"http://{floppy_user}:{floppy_pass}@{floppy_host}:{floppy_port}"
+                  })
+                  time.sleep(0.3)
+
+              for idx, p in enumerate(raw_floppy_proxies):
+                  result = validate_proxy_and_locale(p, label=f"floppy-C{current_cycle}-{idx+1}")
+                  if result['working']:
+                      result['proxy_type_label'] = 'floppydata'
+                      cycle_proxies.append(result)
+                  else:
+                      print(f"[FloppyData] DEAD proxy at index {idx+1} — skipping.")
+                  time.sleep(0.5)
+
+              if len(cycle_proxies) < tasks_per_cycle:
+                  print(f"[FloppyData] ERROR: Only {len(cycle_proxies)} active proxies for {tasks_per_cycle} tasks.")
+                  exit(1)
+
+          # ══════════════════════════════════════════════════════════════════════
+          # SCRAPEOPS BLOCK
+          # ══════════════════════════════════════════════════════════════════════
+          elif is_scrapeops_key and not without_proxy:
+              use_proxy = True
+              country_input = os.environ.get("COUNTRY", "USA")
+              mobile = os.environ.get("MOBILE", "false").lower() == "true"
+              sticky = os.environ.get("STICKY", "false").lower() == "true"
+              cc_input = country_map.get(country_input, "us")
+
+              print(f"[ScrapeOps] Building & validating {tasks_per_cycle} proxy configs for Cycle {current_cycle}...")
+              for i in range(tasks_per_cycle):
+                  absolute_idx = (current_cycle - 1) * tasks_per_cycle + i
+                  key_idx = absolute_idx // 15
+                  current_key = scrapeops_keys[key_idx % len(scrapeops_keys)]
+                  
+                  proxy_user = f"scrapeops.country={cc_input}"
+                  if mobile: proxy_user += ".mobile=true"
+                  if sticky:
+                      session_id = f"c{current_cycle}t{i}{str(uuid.uuid4())[:4]}"
+                      proxy_user += f".sticky_session={session_id}"
+
+                  proxy_url = f"http://{proxy_user}:{current_key}@residential-proxy.scrapeops.io:8181"
+                  pinfo = {
+                      'username': proxy_user, 'password': current_key, 'host': 'residential-proxy.scrapeops.io',
+                      'port': 8181, 'server': 'residential-proxy.scrapeops.io:8181', 'proxy_type_label': 'scrapeops', 'url': proxy_url
+                  }
+
+                  result = validate_proxy_and_locale(pinfo, label=f"scrapeops-C{current_cycle}-{i+1}")
+                  if result['working']:
+                      result['proxy_type_label'] = 'scrapeops'
+                      cycle_proxies.append(result)
+                      print(f"[ScrapeOps] Task {i+1}: ACTIVE | IP={result['ip']} | {result['city']}, {result['region']}, {result['country_code']} | TZ={result['timezone_iana']}")
+                  else:
+                      print(f"[ScrapeOps] Task {i+1}: Could not verify via ipinfo.io — using requested country ({cc_input}) locale.")
+                      fallback_cc = cc_input.upper()
+                      fallback_iana = fallback_tz_map.get(fallback_cc, "UTC")
+                      result = {
+                          'working': True, 'country_code': fallback_cc, 'country_name': country_input, 'ip': 'unknown',
+                          'city': '', 'region': '', 'timezone_iana': fallback_iana, 'timezone_windows': tz_to_windows_tz(fallback_iana),
+                          'windows_locale': country_code_to_locale(fallback_cc), 'windows_keyboard': country_code_to_keyboard(fallback_cc), **pinfo
+                      }
+                      cycle_proxies.append(result)
+                  time.sleep(0.5)
+
+              print(f"[ScrapeOps] Proxy pool ready: {len(cycle_proxies)} entries.")
+
+          # ══════════════════════════════════════════════════════════════════════
+          # ACTION MATRIX
+          # ══════════════════════════════════════════════════════════════════════
+          action_list =["install"] * num_installs + ["click"] * num_clicks
+          random.shuffle(action_list)
+
+          print(f"[Action Matrix] Total Tasks This Cycle: {tasks_per_cycle}")
+          print(f"[Action Matrix] Install Paths         : {num_installs}")
+          print(f"[Action Matrix] Click Paths           : {num_clicks}")
+          print(f"[Action Matrix] Cycle                 : {current_cycle} / {num_run_cycles}")
+          print(f"[Action Matrix] Randomized Queue      : {action_list}")
+
+          run_manual = os.environ.get("RUN_MANUAL", "false").lower() == "true"
+          manual_url_input = os.environ.get("MANUAL_URL", "").strip()
+          manual_url = manual_url_input if run_manual else ""
+
+          avg_urls = {
+              "AVG - TechxTrader": "https://u.to/a-trdr/GoeNIg",
+              "AVG - B4Books":     "https://u.to/a-b4b/O4eNIg",
+              "AVG - F.Ahmad":     "https://u.to/a-fahmad/ooeNIg",
+          }
+          opera_urls = {
+              "OperaGX - B4Books":  "https://u.to/opx-b4b/2nh4Ig",
+              "Opera - Techx":      "https://u.to/techxsm/xVyFIg",
+              "Opera - Fatradez":   "https://u.to/fatradezsm/cF2FIg",
+              "Opera - James":      "https://u.to/jamesxsm/eV2FIg",
+              "Opera - Oliver":     "https://u.to/oliverxsm/f12FIg",
+              "Opera - Mahal":      "https://u.to/mahalxsm/iF2FIg",
+              "Opera - Polar":      "https://u.to/opxplr/wzh4Ig",
+          }
+          opera_one_urls = {
+              "Opera-One - Esmeel":  "https://u.to/esmlxopo/cTOGIg",
+              "Opera-One - Harrari": "https://u.to/hararixopo/zTOGIg",
+              "Opera-One - Chloe":   "https://u.to/chloexopo/_DOGIg",
+              "Opera-One - Daisy":   "https://u.to/daisyxopo/LjSGIg",
+              "Opera-One - Jimmy":   "https://u.to/jmy/mUZ4Ig",
+          }
+          ad_mvn_urls = {
+              "Ad-MVN - Techx":      "https://u.to/techxadmvnxsmrt/gvd7Ig",
+              "Ad-MVN - B4Books":    "https://u.to/b4bxadmvnxsmrt/5-h7Ig",
+              "Ad-MVN - Orderflowz": "https://u.to/ordrflzadmvnxsmrt/-fZ7Ig",
+              "Ad-MVN - A2Z":        "https://u.to/a2zadmvnxsmrt/Y-t7Ig",
+          }
+          all_urls = {**avg_urls, **opera_urls, **opera_one_urls, **ad_mvn_urls}
+
+          dynamic_links =["Opera - Techx", "Opera - Fatradez", "Opera - James", "Opera - Oliver", "Opera - Mahal"]
+          software_choice = os.environ.get("SOFTWARE_CHOICE", "AVG - B4Books")
+
+          if manual_url:
+              target_url = manual_url
+              software_type = "dynamic_opera"
+              exe_filter = "*.exe"
+              print(f"[Target] Manual URL selected: {target_url}")
+          else:
+              target_url = all_urls.get(software_choice, avg_urls.get("AVG - B4Books", "https://u.to/a-b4b/O4eNIg"))
+              if software_choice in dynamic_links:
+                  software_type = "opera_smart_link"
+                  exe_filter = "*Opera*Setup*.exe"
+              elif software_choice.startswith("Ad-MVN"):
+                  software_type = "dynamic_opera"
+                  exe_filter = "*Opera*Setup*.exe"
+              elif software_choice.startswith("OperaGX"):
+                  software_type = "opera_gx"
+                  exe_filter = "OperaGXSetup*.exe"
+              elif software_choice.startswith("Opera-One"):
+                  software_type = "opera_one"
+                  exe_filter = "OperaSetup*.exe"
+              else:
+                  software_type = "avg"
+                  exe_filter = "*avg*.exe"
+              print(f"[Target] Software: {software_choice} -> URL: {target_url}")
+              print(f"[Target] Engine Type: {software_type} | Filter: {exe_filter}")
+
+          def short_os(os_ver):
+              if os_ver == "windows-2025": return "W25"
+              elif os_ver == "windows-2022": return "W22"
+              elif os_ver == "windows-11-arm": return "W11A"
+              else: return "W" + os_ver.replace("windows-", "").replace("-", "")
+
+          def short_software(choice):
+              prefix_map = {"OperaGX": "OPX", "Opera-One": "OPO", "Ad-MVN": "MVN", "AVG": "AVG", "Opera": "OP"}
+              for key, prefix in prefix_map.items():
+                  if choice.startswith(key):
+                      parts = choice.split(" - ", 1)
+                      list_name = parts[1].replace(" ", "") if len(parts) > 1 else ""
+                      return f"{prefix}-{list_name}"
+              return choice.replace(" ", "").replace("-", "")
+
+          short_os_tag = short_os(os_version)
+          short_sw_tag = "MANUAL" if manual_url else short_software(software_choice)
+
+          includes =[]
+          if email:
+              for i in range(tasks_per_cycle):
+                  action_mode = action_list[i]
+                  action_cap  = action_mode.capitalize()
+                  absolute_idx = (current_cycle - 1) * tasks_per_cycle + i + 1
+
+                  if use_proxy and cycle_proxies:
+                      proxy = cycle_proxies[i]
+                      cc    = proxy.get('country_code', 'US').upper()
+                      win_tz     = proxy.get('timezone_windows', 'UTC')
+                      win_locale = proxy.get('windows_locale', 'en-US')
+                      win_kb     = proxy.get('windows_keyboard', '0409:00000409')
+                      iana_tz    = proxy.get('timezone_iana', 'UTC')
+                      real_ip    = proxy.get('ip', 'unknown')
+                      city       = proxy.get('city', '')
+                      region     = proxy.get('region', '')
+                      proxy_type = proxy.get('proxy_type_label', 'unknown')
+
+                      proxy_user = proxy.get('username', '')
+                      proxy_pass = proxy.get('password', '')
+
+                      device_name = f"C{current_cycle}-T{absolute_idx}-{short_os_tag}-{short_sw_tag}-{action_cap}-{cc}"
+                      includes.append({
+                          "device":          device_name,
+                          "email":           email,
+                          "os":              os_version,
+                          "use_proxy":       "true",
+                          "proxy_server":    proxy['server'],
+                          "proxy_user":      proxy_user,
+                          "proxy_pass":      proxy_pass,
+                          "proxy_type":      proxy_type,
+                          "target_url":      target_url,
+                          "software_type":   software_type,
+                          "exe_filter":      exe_filter,
+                          "action_mode":     action_mode,
+                          "proxy_country_code":    cc,
+                          "proxy_city":            city,
+                          "proxy_region":          region,
+                          "proxy_real_ip":         real_ip,
+                          "timezone_windows":      win_tz,
+                          "timezone_iana":         iana_tz,
+                          "windows_locale":        win_locale,
+                          "windows_keyboard":      win_kb,
+                      })
+                      print(f"[Task Added] {device_name} | Proxy={proxy['server']} ({cc}) | "
+                            f"Type={proxy_type} | User={proxy_user[:20]}... | "
+                            f"IP={real_ip} | TZ={win_tz} | Locale={win_locale} | KB={win_kb}")
+
+                  else:
+                      device_name = f"C{current_cycle}-T{absolute_idx}-{short_os_tag}-{short_sw_tag}-{action_cap}-DIRECT"
+                      includes.append({
+                          "device":          device_name,
+                          "email":           email,
+                          "os":              os_version,
+                          "use_proxy":       "false",
+                          "proxy_server":    "", "proxy_user": "", "proxy_pass": "",
+                          "proxy_type":      "none",
+                          "target_url":      target_url,
+                          "software_type":   software_type,
+                          "exe_filter":      exe_filter,
+                          "action_mode":     action_mode,
+                          "proxy_country_code":    "US",
+                          "proxy_city":            "",
+                          "proxy_region":          "",
+                          "proxy_real_ip":         "direct",
+                          "timezone_windows":      "UTC",
+                          "timezone_iana":         "UTC",
+                          "windows_locale":        "en-US",
+                          "windows_keyboard":      "0409:00000409",
+                      })
+                      print(f"[Task Added] {device_name} | Proxy: NONE | Locale: en-US")
+
+          if not includes:
+              print("Error: Valid configuration could not be generated. Exiting.")
+              exit(1)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"matrix={json.dumps({'include': includes})}\n")
+              f.write(f"is_manual_proxy={str(is_manual_proxy).lower()}\n")
+          print("========== MATRIX GENERATION COMPLETE ==========")
+
+      - name: Update Workflow Defaults (Remember Inputs)
+        shell: python
+        env:
+          OS_VERSION: ${{ inputs.os_version }}
+          GETSCREEN_EMAIL: ${{ inputs.getscreen_email }}
+          NUM_DEVICES: ${{ inputs.num_devices }}
+          NUM_INSTALLS: ${{ inputs.num_installs }}
+          NUM_CLICKS: ${{ inputs.num_clicks }}
+          NUM_CYCLES: ${{ inputs.num_run_cycles }}
+          WAIT_PERIOD: ${{ inputs.wait_period }}
+          SOFTWARE_CHOICE: ${{ inputs.software_choice }}
+          MANUAL_URL: ${{ inputs.manual_software_url }}
+          RUN_MANUAL: ${{ inputs.run_manual_link }}
+          API_KEY: ${{ inputs.scrapeops_api_key }}
+          WITHOUT_PROXY: ${{ inputs.use_without_proxy }}
+          COUNTRY: ${{ inputs.proxy_country }}
+          MOBILE: ${{ inputs.mobile_proxies }}
+          STICKY: ${{ inputs.sticky_sessions }}
+        run: |
+          import re, os
+
+          SCRAPEOPS_KEY_RE = re.compile(
+              r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
+          FLOPPY_KEY_RE = re.compile(r'^[A-Za-z0-9_]{30,80}$')
+
+          def update_yaml_default(yaml_str, input_key, new_val, is_bool=False):
+              lines = yaml_str.split("\n")
+              in_target_block = False
+              target_indent = -1
+              for i, line in enumerate(lines):
+                  match = re.match(r"^([ \t]*)" + input_key + r":", line)
+                  if match:
+                      in_target_block = True
+                      target_indent = len(match.group(1))
+                      continue
+                  if in_target_block:
+                      current_indent = len(line) - len(line.lstrip(" \t"))
+                      if line.strip() and current_indent <= target_indent:
+                          in_target_block = False
+                          continue
+                      if line.lstrip(" \t").startswith("default:"):
+                          indent = line[:len(line) - len(line.lstrip(" \t"))]
+                          if is_bool:
+                              val_str = "true" if str(new_val).lower() == "true" else "false"
+                              lines[i] = f"{indent}default: {val_str}"
+                          else:
+                              if new_val is None or str(new_val).strip().lower() in["none", "null", "blank", "empty", "''", '""']: safe_val = ""
+                              else: safe_val = str(new_val).replace("'", "\\'")
+                              lines[i] = f"{indent}default: '{safe_val}'"
+                          break
+              return "\n".join(lines)
+
+          api_key_input = os.environ.get("API_KEY", "").strip()
+          is_manual_proxy = False
+          is_floppy_key = False
+          is_scrapeops_key = False
+          if api_key_input:
+              raw_items = re.split(r'[\s,;]+', api_key_input)
+              proxy_candidates =[item for item in raw_items if ('://' in item) or ('@' in item) or (item.count(':') >= 2 and len(item) > 10)]
+              if len(proxy_candidates) >= 1:
+                  is_manual_proxy = True
+              elif SCRAPEOPS_KEY_RE.match(api_key_input):
+                  is_scrapeops_key = True
+              elif FLOPPY_KEY_RE.match(api_key_input):
+                  is_floppy_key = True
+              else:
+                  is_scrapeops_key = True
+
+          file_path = ".github/workflows/main4.yml"
+          if os.path.exists(file_path):
+              print(f"[Workflow State] Attempting to update defaults in {file_path}")
+              with open(file_path, "r", encoding="utf-8") as f:
+                  content = f.read()
+
+              run_manual = os.environ.get("RUN_MANUAL", "false").lower() == "true"
+              content = update_yaml_default(content, "os_version", os.environ.get("OS_VERSION"))
+              content = update_yaml_default(content, "getscreen_email", os.environ.get("GETSCREEN_EMAIL"))
+              content = update_yaml_default(content, "num_devices", os.environ.get("NUM_DEVICES"))
+              content = update_yaml_default(content, "num_installs", os.environ.get("NUM_INSTALLS"))
+              content = update_yaml_default(content, "num_clicks", os.environ.get("NUM_CLICKS"))
+              content = update_yaml_default(content, "num_run_cycles", os.environ.get("NUM_CYCLES"))
+              content = update_yaml_default(content, "wait_period", os.environ.get("WAIT_PERIOD"))
+              content = update_yaml_default(content, "software_choice", os.environ.get("SOFTWARE_CHOICE"))
+
+              manual_url_to_save = os.environ.get("MANUAL_URL") if run_manual else ""
+              content = update_yaml_default(content, "manual_software_url", manual_url_to_save)
+              content = update_yaml_default(content, "run_manual_link", run_manual, is_bool=True)
+
+              if not is_manual_proxy and api_key_input:
+                  content = update_yaml_default(content, "scrapeops_api_key", api_key_input)
+                  key_type = "FloppyData" if is_floppy_key else "ScrapeOps"
+                  print(f"[Workflow State] Saved {key_type} API key to defaults.")
+              else:
+                  print("[Workflow State] Manual proxies detected — NOT saving proxy list to defaults.")
+
+              content = update_yaml_default(content, "use_without_proxy", os.environ.get("WITHOUT_PROXY"), is_bool=True)
+              content = update_yaml_default(content, "proxy_country", os.environ.get("COUNTRY"))
+              content = update_yaml_default(content, "mobile_proxies", os.environ.get("MOBILE"), is_bool=True)
+              content = update_yaml_default(content, "sticky_sessions", os.environ.get("STICKY"), is_bool=True)
+
+              with open(file_path, "w", encoding="utf-8") as f:
+                  f.write(content)
+              print(f"[Workflow State] Successfully saved new defaults.")
+          else:
+              print(f"[Workflow State] Warning: File {file_path} not found. Skipping auto-save.")
+
+      - name: Commit and Push New Defaults
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/main4.yml
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update last used inputs[skip ci]" && git push)
+
+  remote_session:
+    name: Session ${{ matrix.device }}
+    needs: prepare_matrix
+    if: needs.prepare_matrix.outputs.has_tasks == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 6
+
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.num_devices) }}
+      matrix: ${{ fromJson(needs.prepare_matrix.outputs.matrix) }}
+
+    steps:
+      - name: Disable Windows Defender & Edge SmartScreen
+        shell: pwsh
+        run: |
+          Write-Host "========== SYSTEM PREPARATION ==========" -ForegroundColor Cyan
+          Write-Host "[Defender] Disabling Windows Defender Realtime Monitoring..." -ForegroundColor Yellow
+          Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction SilentlyContinue
+          Write-Host "[Defender] Disabling PUA Protection..." -ForegroundColor Yellow
+          Set-MpPreference -PUAProtection 0 -ErrorAction SilentlyContinue
+          Write-Host "[Defender] Disabling BlockAtFirstSeen..." -ForegroundColor Yellow
+          Set-MpPreference -DisableBlockAtFirstSeen $true -ErrorAction SilentlyContinue
+          Write-Host "[Defender] Disabling IOAV Protection..." -ForegroundColor Yellow
+          Set-MpPreference -DisableIOAVProtection $true -ErrorAction SilentlyContinue
+
+          Write-Host "[Registry] Enforcing Edge SmartScreen bypass policies..." -ForegroundColor Cyan
+          $edgePolicy = "HKLM:\SOFTWARE\Policies\Microsoft\Edge"
+          if (-not (Test-Path $edgePolicy)) { New-Item -Path $edgePolicy -Force | Out-Null; Write-Host "[Registry] Created $edgePolicy" }
+          Set-ItemProperty -Path $edgePolicy -Name "SmartScreenEnabled" -Value 0
+          Set-ItemProperty -Path $edgePolicy -Name "SmartScreenPuaEnabled" -Value 0
+          Set-ItemProperty -Path $edgePolicy -Name "DownloadRestrictions" -Value 0
+          Set-ItemProperty -Path $edgePolicy -Name "PreventSmartScreenPromptOverride" -Value 0
+          Set-ItemProperty -Path $edgePolicy -Name "PreventSmartScreenPromptOverrideForFiles" -Value 0
+
+          $exemptPath = "$edgePolicy\ExemptDomainFileTypePairsFromFileTypeDownloadWarnings"
+          if (-not (Test-Path $exemptPath)) { New-Item -Path $exemptPath -Force | Out-Null }
+          Set-ItemProperty -Path $exemptPath -Name "1" -Value '{"domains":["*"],"file_extension":"exe"}'
+          Write-Host "[Registry] Edge EXEs whitelisted from all warnings." -ForegroundColor Green
+
+      - name: Apply Proxy-Matched Locale, Timezone & Language
+        shell: pwsh
+        env:
+          TIMEZONE_WINDOWS: ${{ matrix.timezone_windows }}
+          WINDOWS_LOCALE:   ${{ matrix.windows_locale }}
+          WINDOWS_KEYBOARD: ${{ matrix.windows_keyboard }}
+          PROXY_COUNTRY:    ${{ matrix.proxy_country_code }}
+          PROXY_CITY:       ${{ matrix.proxy_city }}
+          PROXY_REGION:     ${{ matrix.proxy_region }}
+          PROXY_REAL_IP:    ${{ matrix.proxy_real_ip }}
+          TIMEZONE_IANA:    ${{ matrix.timezone_iana }}
+        run: |
+          $tz      = $env:TIMEZONE_WINDOWS
+          $locale  = $env:WINDOWS_LOCALE
+          $kb      = $env:WINDOWS_KEYBOARD
+          $country = $env:PROXY_COUNTRY
+          $city    = $env:PROXY_CITY
+          $region  = $env:PROXY_REGION
+          $realIp  = $env:PROXY_REAL_IP
+          $tzIana  = $env:TIMEZONE_IANA
+
+          Write-Host "============================================================" -ForegroundColor Cyan
+          Write-Host " Locale Alignment Engine" -ForegroundColor Cyan
+          Write-Host " Real Proxy IP   : $realIp" -ForegroundColor Gray
+          Write-Host " Location        : $city, $region, $country" -ForegroundColor Gray
+          Write-Host " IANA Timezone   : $tzIana" -ForegroundColor Gray
+          Write-Host " Windows TZ      : $tz" -ForegroundColor Gray
+          Write-Host " Windows Locale  : $locale" -ForegroundColor Gray
+          Write-Host " Keyboard Layout : $kb" -ForegroundColor Gray
+          Write-Host "============================================================" -ForegroundColor Cyan
+
+          if ($tz -and $tz -ne "UTC") {
+              try {
+                  Set-TimeZone -Id $tz -ErrorAction Stop
+                  Write-Host "[Locale] Timezone set to: $tz" -ForegroundColor Green
+              } catch {
+                  Write-Host "[Locale] WARNING: Could not set timezone '$tz': $_" -ForegroundColor Yellow
+                  try {
+                      tzutil /s "$tz"
+                      Write-Host "[Locale] Timezone set via tzutil: $tz" -ForegroundColor Green
+                  } catch {
+                      Write-Host "[Locale] tzutil also failed. Skipping timezone change." -ForegroundColor Red
+                  }
+              }
+          } else {
+              Write-Host "[Locale] Timezone is UTC or unset — skipping." -ForegroundColor DarkGray
+          }
+
+          try {
+              Set-WinSystemLocale -SystemLocale $locale -ErrorAction Stop
+              Write-Host "[Locale] System locale set to: $locale" -ForegroundColor Green
+          } catch {
+              Write-Host "[Locale] WARNING: Set-WinSystemLocale failed for '$locale': $_" -ForegroundColor Yellow
+          }
+
+          try {
+              Set-WinUILanguageOverride -Language $locale -ErrorAction Stop
+              Write-Host "[Locale] UI language override set to: $locale" -ForegroundColor Green
+          } catch {
+              Write-Host "[Locale] WARNING: Set-WinUILanguageOverride failed for '$locale': $_" -ForegroundColor Yellow
+          }
+
+          $geoMap = @{
+              "US"="244"; "GB"="242"; "CA"="39"; "AU"="12"; "DE"="94";
+              "FR"="84"; "BR"="32"; "MX"="166"; "ES"="217"; "VN"="251";
+              "CH"="223"; "ID"="111"; "IT"="118"; "NL"="176"; "PL"="191";
+              "AR"="11"; "CL"="46"; "CO"="51"; "IN"="113"; "JP"="122";
+              "KR"="134"; "CN"="45"; "TW"="237"; "RU"="203"; "TR"="235";
+              "SA"="205"; "AE"="224"; "ZA"="209"; "NG"="178"; "KE"="129";
+              "PH"="185"; "TH"="227"; "MY"="167"; "SG"="215"; "HK"="104";
+              "PT"="193"; "RO"="200"; "HU"="109"; "CZ"="75"; "SK"="214";
+              "UA"="241"; "GR"="98"; "SE"="221"; "NO"="177"; "DK"="61";
+              "FI"="77"; "BE"="21"; "AT"="14"; "NZ"="183"; "IE"="110";
+          }
+          $geoId = $geoMap[$country]
+          if ($geoId) {
+              try {
+                  Set-WinHomeLocation -GeoId ([int]$geoId) -ErrorAction Stop
+                  Write-Host "[Locale] Home location (GeoID) set to: $country ($geoId)" -ForegroundColor Green
+              } catch {
+                  Write-Host "[Locale] WARNING: Set-WinHomeLocation failed: $_" -ForegroundColor Yellow
+              }
+          } else {
+              Write-Host "[Locale] No GeoID mapping found for '$country' — skipping home location." -ForegroundColor DarkGray
+          }
+
+          try {
+              $langList = New-WinUserLanguageList $locale -ErrorAction Stop
+              if ($kb -and $kb -ne "") {
+                  $langList[0].InputMethodTips.Clear()
+                  $langList[0].InputMethodTips.Add($kb)
+              }
+              Set-WinUserLanguageList $langList -Force -ErrorAction Stop
+              Write-Host "[Locale] User language list set: $locale | Keyboard: $kb" -ForegroundColor Green
+          } catch {
+              Write-Host "[Locale] WARNING: Set-WinUserLanguageList failed: $_" -ForegroundColor Yellow
+          }
+
+          try {
+              w32tm /resync /force 2>&1 | Out-Null
+              Write-Host "[Locale] System clock synced via w32tm." -ForegroundColor Green
+          } catch {
+              Write-Host "[Locale] w32tm sync failed (non-critical)." -ForegroundColor DarkGray
+          }
+
+          $localeEnvPath = "$env:TEMP\proxy_locale.env"
+          @"
+          LOCALE=$locale
+          KEYBOARD=$kb
+          COUNTRY=$country
+          TIMEZONE_WIN=$tz
+          REAL_IP=$realIp
+          "@ | Out-File -FilePath $localeEnvPath -Encoding utf8
+          Write-Host "[Locale] Locale metadata written to: $localeEnvPath" -ForegroundColor DarkGray
+          Write-Host "[Locale] ✓ All locale adjustments applied for $country ($locale / $tz)" -ForegroundColor Green
+
+      - name: Install and Start Getscreen.me (Windows)
+        shell: pwsh
+        run: |
+          Write-Host "========== REMOTE ACCESS AGENT ==========" -ForegroundColor Cyan
+          Write-Host "[Getscreen] Starting MSI download from getscreen.me..."
+          $MaxRetries = 3
+          $RetryCount = 0
+          $Success = $false
+          while (-not $Success -and $RetryCount -lt $MaxRetries) {
+              try {
+                  Invoke-WebRequest -Uri "https://getscreen.me/download/getscreen.msi" -OutFile "getscreen.msi" -ErrorAction Stop
+                  if ((Get-Item "getscreen.msi").length -gt 1MB) {
+                      $Success = $true
+                      Write-Host "[Getscreen] Download successful." -ForegroundColor Green
+                  } else {
+                      Write-Host "[Getscreen] Downloaded file too small. Retrying ($RetryCount/$MaxRetries)..." -ForegroundColor Yellow
+                      Start-Sleep -Seconds 5; $RetryCount++
+                  }
+              } catch {
+                  Write-Host "[Getscreen] Connection error. Retrying ($RetryCount/$MaxRetries)..." -ForegroundColor Red
+                  Start-Sleep -Seconds 5; $RetryCount++
+              }
+          }
+          if (-not $Success) { Write-Host "[Getscreen] Failed to download agent. Exiting."; exit 1 }
+
+          Write-Host "[Getscreen] Executing silent install for account: ${{ matrix.email }}"
+          $InstallArgs = "/i getscreen.msi /qn REGISTER=`"${{ matrix.email }}`" CONFIG=`"name='${{ matrix.device }}' autostart=true nonadmin=true control=true disable_confirmation=true`""
+          Start-Process msiexec.exe -Wait -ArgumentList $InstallArgs
+          Write-Host "[Getscreen] Agent configured and running in background." -ForegroundColor Green
+
+      - name: Setup Auto-Downloader & Software Installation
+        shell: pwsh
+        env:
+          USE_PROXY: ${{ matrix.use_proxy }}
+          PROXY_SERVER: ${{ matrix.proxy_server }}
+          PROXY_USER: ${{ matrix.proxy_user }}
+          PROXY_PASS: ${{ matrix.proxy_pass }}
+          PROXY_TYPE: ${{ matrix.proxy_type }}
+          TARGET_URL: ${{ matrix.target_url }}
+          SOFTWARE_TYPE: ${{ matrix.software_type }}
+          EXE_FILTER: ${{ matrix.exe_filter }}
+          ACTION_MODE: ${{ matrix.action_mode }}
+          WINDOWS_LOCALE: ${{ matrix.windows_locale }}
+          WINDOWS_KEYBOARD: ${{ matrix.windows_keyboard }}
+          PROXY_COUNTRY_CODE: ${{ matrix.proxy_country_code }}
+          TIMEZONE_WINDOWS: ${{ matrix.timezone_windows }}
+        run: |
+          $useProxy    = $env:USE_PROXY -eq "true"
+          $proxyType   = $env:PROXY_TYPE
+          $proxyUser   = $env:PROXY_USER
+          $proxyPass   = $env:PROXY_PASS
+          $proxyServer = $env:PROXY_SERVER
+
+          Write-Host "============================================================" -ForegroundColor Cyan
+          Write-Host " Zero-Touch Downloader & Installer Active" -ForegroundColor Cyan
+          Write-Host " Target URL: $env:TARGET_URL" -ForegroundColor Gray
+          Write-Host " Category  : $env:SOFTWARE_TYPE" -ForegroundColor Cyan
+          Write-Host " Action    : $($env:ACTION_MODE.ToUpper()) PATHWAY ASSIGNED" -ForegroundColor Magenta
+          Write-Host " Locale    : $env:WINDOWS_LOCALE | Country: $env:PROXY_COUNTRY_CODE | TZ: $env:TIMEZONE_WINDOWS" -ForegroundColor DarkCyan
+
+          # ── ROBUST PROXY MODE DETECTION ──────────────────────────────────────
+          if ($useProxy) {
+              if ($proxyType -eq "manual") {
+                  Write-Host " Mode      : Manual Proxy ($proxyServer)" -ForegroundColor Cyan
+                  Write-Host " Auth User : $($proxyUser.Substring(0, [Math]::Min(20, $proxyUser.Length)))..." -ForegroundColor DarkCyan
+              } elseif ($proxyType -eq "floppydata") {
+                  Write-Host " Mode      : FloppyData Proxy ($proxyServer)" -ForegroundColor Cyan
+                  Write-Host " Auth User : $($proxyUser.Substring(0, [Math]::Min(20, $proxyUser.Length)))..." -ForegroundColor DarkCyan
+              } elseif ($proxyType -eq "scrapeops") {
+                  $proxyServer = "residential-proxy.scrapeops.io:8181"
+                  Write-Host " Mode      : ScrapeOps Proxy ($proxyServer)" -ForegroundColor Cyan
+                  Write-Host " Auth User : $($proxyUser.Substring(0, [Math]::Min(30, $proxyUser.Length)))..." -ForegroundColor DarkCyan
+              } else {
+                  Write-Host " Mode      : ERROR — Unrecognized proxy type '$proxyType'. Aborting." -ForegroundColor Red
+                  exit 1
+              }
+          } else {
+              Write-Host " Mode      : Direct (Proxy Completely Bypassed)" -ForegroundColor Yellow
+          }
+          Write-Host "============================================================" -ForegroundColor Cyan
+
+          Write-Host "[Dependencies] Installing python UIA modules (pywinauto, pyautogui, etc)..." -ForegroundColor DarkGray
+          python -m pip install pywinauto pyautogui pygetwindow keyboard --quiet
+
+          # ══════════════════════════════════════════════════════════════════════
+          # Write proxy credentials to a temp file so Python reads them safely
+          # (avoids any shell quoting / escaping issues with long ScrapeOps usernames)
+          # ══════════════════════════════════════════════════════════════════════
+          $credFile = "$env:TEMP\proxy_creds.json"
+          $credObj  = @{
+              proxy_user   = $proxyUser
+              proxy_pass   = $proxyPass
+              proxy_server = $proxyServer
+              proxy_type   = $proxyType
+              use_proxy    = $useProxy
+          }
+          $credObj | ConvertTo-Json -Depth 2 | Out-File -FilePath $credFile -Encoding utf8
+          Write-Host "[Proxy] Credentials written to secure temp file: $credFile" -ForegroundColor DarkGray
+
+          $handlerPy = @'
+          import time, sys, subprocess, random, os, tempfile, ctypes, json
+          from pywinauto import Desktop
+          import pyautogui
+          from pywinauto.keyboard import send_keys
+
+          def log_msg(tag, msg):
+              t = time.strftime('%H:%M:%S')
+              print(f"[{t}][{tag}] {msg}", flush=True)
+
+          # ── Load proxy credentials from the JSON file written by PowerShell ──
+          _CRED_FILE = os.path.join(tempfile.gettempdir(), "proxy_creds.json")
+          _CREDS = {}
+          try:
+              with open(_CRED_FILE, "r", encoding="utf-8") as _f:
+                  _CREDS = json.load(_f)
+              log_msg("ProxyCreds", f"Credentials loaded from file. Type={_CREDS.get('proxy_type','?')} | "
+                      f"User={str(_CREDS.get('proxy_user',''))[:25]}... | "
+                      f"Server={_CREDS.get('proxy_server','?')}")
+          except Exception as _e:
+              log_msg("ProxyCreds", f"WARNING: Could not load credential file: {_e}")
+
+          PROXY_USER   = _CREDS.get("proxy_user",   "")
+          PROXY_PASS   = _CREDS.get("proxy_pass",   "")
+          PROXY_SERVER = _CREDS.get("proxy_server", "")
+          PROXY_TYPE   = _CREDS.get("proxy_type",   "none")
+          USE_PROXY    = str(_CREDS.get("use_proxy", False)).lower() in ("true", "1", "yes")
+
+          DOWNLOAD_DONE_TITLES =[
+              "Thanks for downloading Opera", "Thanks for downloadin",
+              "Download | Thanks", "sudetyj", "clickWorker",
+              "GET READY TO PLAY", "ready to install",
+          ]
+
+          INTERFERENCE_TITLES =[
+              "Settings",
+              "Windows Settings",
+              "Default apps",
+              "System Settings",
+              "Choose an app",
+              "How do you want to open",
+              "Open with",
+              "Windows PowerShell",
+              "Administrator: Windows PowerShell",
+              "Command Prompt",
+              "Administrator: Command Prompt",
+              "cmd.exe",
+              "PowerShell",
+              "Console Host",
+              "Windows Terminal",
+              "Administrator: C:\\Program Files",
+              "Administrator: C:\\Windows",
+              "User Account Control",
+          ]
+
+          INTERFERENCE_SUBSTRINGS =[
+              "default apps",
+              "choose a default",
+              "set as default",
+              "open with",
+              "how do you want to open",
+              "administrator: c:\\",
+              "user account control",
+          ]
+
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL DOWNLOAD BUTTON KEYWORDS
+          # ══════════════════════════════════════════════════════════════════════
+
+          OPERA_DOWNLOAD_KEYWORDS =[
+              # English
+              "download opera", "download opera gx", "download opera one",
+              "download now", "download free", "get opera", "get opera gx",
+              "free download", "download for free", "download for windows",
+              "get for free", "get it free", "install opera", "install now",
+              "download browser", "get browser",
+              # French
+              "télécharger opera", "télécharger maintenant", "télécharger gratuitement",
+              "télécharger", "obtenir opera", "installer maintenant",
+              "téléchargement gratuit", "télécharger pour windows",
+              "télécharger le navigateur", "obtenir gratuitement",
+              # Portuguese / Brazilian
+              "baixar opera", "baixar agora", "baixar grátis", "baixar gratis",
+              "baixar gratuitamente", "baixar para windows", "baixe agora",
+              "baixe grátis", "baixe gratis", "obter opera", "instalar agora",
+              "download grátis", "download gratis", "baixar navegador",
+              # German
+              "opera herunterladen", "jetzt herunterladen", "kostenlos herunterladen",
+              "herunterladen", "opera holen", "für windows herunterladen",
+              "kostenlos holen", "browser herunterladen", "jetzt installieren",
+              "gratis herunterladen",
+              # Spanish
+              "descargar opera", "descargar ahora", "descargar gratis",
+              "descargar gratuitamente", "descargar para windows",
+              "obtener opera", "instalar ahora", "descargar navegador",
+              "gratis descargar", "descarga gratis",
+              # Italian
+              "scarica opera", "scarica ora", "scarica gratis",
+              "scarica gratuitamente", "scarica per windows",
+              "ottieni opera", "installa ora", "download gratuito",
+              "scarica il browser", "scarica gratis",
+              # Dutch
+              "opera downloaden", "nu downloaden", "gratis downloaden",
+              "opera ophalen", "voor windows downloaden", "installeer nu",
+              "gratis ophalen", "browser downloaden",
+              # Polish
+              "pobierz operę", "pobierz opere", "pobierz teraz",
+              "pobierz za darmo", "pobierz opera", "zainstaluj teraz",
+              "darmowe pobieranie", "pobierz przeglądarkę", "pobierz przegladarke",
+              # Vietnamese
+              "tải opera", "tải xuống", "tải về", "tải miễn phí",
+              "tải ngay", "cài đặt ngay", "tải cho windows",
+              "tải trình duyệt", "nhận opera",
+              # Indonesian
+              "unduh opera", "unduh sekarang", "unduh gratis",
+              "download opera", "pasang opera", "instal sekarang",
+              "dapatkan opera", "unduh browser", "gratis unduh",
+          ]
+
+          AVG_DOWNLOAD_KEYWORDS =[
+              # English
+              "download avg", "free download", "download free", "get avg free",
+              "download for free", "download avg free", "download now",
+              "get avg", "install avg", "download for windows",
+              "get protection", "download avg antivirus",
+              # French
+              "télécharger avg", "télécharger gratuitement", "téléchargement gratuit",
+              "obtenir avg", "télécharger maintenant",
+              # Portuguese / Brazilian
+              "baixar avg", "baixar grátis", "baixar gratis", "baixe avg",
+              "baixar agora", "obter avg", "baixar antivírus avg",
+              # German
+              "avg herunterladen", "kostenlos herunterladen", "jetzt herunterladen",
+              "avg holen", "gratis herunterladen",
+              # Spanish
+              "descargar avg", "descargar gratis", "descargar ahora",
+              "obtener avg", "descargar antivirus avg",
+              # Italian
+              "scarica avg", "scarica gratis", "scarica ora",
+              "ottieni avg", "download gratuito avg",
+              # Dutch
+              "avg downloaden", "gratis downloaden", "nu downloaden",
+              # Polish
+              "pobierz avg", "pobierz za darmo", "pobierz teraz",
+              # Vietnamese
+              "tải avg", "tải xuống", "tải miễn phí", "tải về avg",
+              # Indonesian
+              "unduh avg", "unduh gratis", "unduh sekarang",
+          ]
+
+          UNIVERSAL_DOWNLOAD_KEYWORDS =[
+              # English
+              "download", "download now", "free download", "get it free",
+              "install now", "get now", "download for free",
+              # French
+              "télécharger", "téléchargement", "obtenir",
+              # Portuguese
+              "baixar", "baixe", "baixe agora", "obter",
+              # German
+              "herunterladen", "downloaden", "holen",
+              # Spanish
+              "descargar", "descarga", "obtener",
+              # Italian
+              "scarica", "scaricare", "ottieni",
+              # Dutch
+              "downloaden", "ophalen",
+              # Polish
+              "pobierz", "pobieranie",
+              # Vietnamese
+              "tải xuống", "tải về", "tải ngay",
+              # Indonesian
+              "unduh", "unduh sekarang",
+          ]
+
+          INTERSTITIAL_LINK_KEYWORDS =[
+              "opera gx", "opera one", "opera browser", "opera for windows",
+              "download opera", "click here", "click to download",
+              "start download", "get started",
+              # French
+              "cliquez ici", "commencer le téléchargement",
+              # Portuguese
+              "clique aqui", "iniciar download", "começar download",
+              # German
+              "hier klicken", "download starten",
+              # Spanish
+              "haga clic aquí", "haz clic aquí", "iniciar descarga",
+              # Italian
+              "clicca qui", "avvia download",
+              # Dutch
+              "klik hier", "download starten",
+              # Polish
+              "kliknij tutaj", "rozpocznij pobieranie",
+              # Vietnamese
+              "bấm vào đây", "nhấn vào đây", "bắt đầu tải",
+              # Indonesian
+              "klik di sini", "mulai unduh",
+          ]
+
+          COOKIE_CONSENT_KEYWORDS =[
+              # English
+              "accept all", "accept cookies", "allow all", "accept selection",
+              "i accept", "agree", "i agree", "ok", "accept",
+              # French
+              "accepter tout", "tout accepter", "j'accepte", "accepter",
+              "j'accepte tout", "autoriser tout",
+              # Portuguese
+              "aceitar tudo", "aceitar todos", "aceitar", "concordar",
+              # German
+              "alle akzeptieren", "akzeptieren", "zustimmen", "einverstanden",
+              "alle annehmen", "ich stimme zu",
+              # Spanish
+              "aceptar todo", "aceptar todos", "aceptar", "de acuerdo",
+              # Italian
+              "accetta tutto", "accetta tutti", "accetta", "sono d'accordo",
+              # Dutch
+              "alles accepteren", "accepteren", "akkoord", "ik ga akkoord",
+              # Polish
+              "zaakceptuj wszystko", "zaakceptuj", "zgadzam się",
+              # Vietnamese
+              "chấp nhận tất cả", "chấp nhận", "đồng ý",
+              # Indonesian
+              "terima semua", "terima", "setuju",
+          ]
+
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL "KEEP" / "KEEP ANYWAY" BUTTON KEYWORDS
+          # ══════════════════════════════════════════════════════════════════════
+          KEEP_DOWNLOAD_KEYWORDS =[
+              # English
+              "keep", "keep anyway", "keep file", "run anyway",
+              "keep download", "download anyway", "allow",
+              # French (France + Canada + Switzerland + Belgium)
+              "conserver", "conserver quand même", "garder", "garder quand même",
+              "conserver le fichier", "télécharger quand même",
+              "continuer quand même", "autoriser",
+              # Portuguese / Brazilian (Brazil)
+              "manter", "manter assim mesmo", "manter arquivo",
+              "baixar assim mesmo", "continuar assim mesmo",
+              "permitir", "manter de qualquer forma",
+              # German (Germany + Switzerland + Austria)
+              "beibehalten", "trotzdem beibehalten", "datei beibehalten",
+              "trotzdem herunterladen", "trotzdem ausführen",
+              "zulassen", "behalten", "trotzdem behalten",
+              # Spanish (Mexico + Spain)
+              "conservar", "conservar de todas formas", "conservar igualmente",
+              "mantener", "mantener de todas formas", "descargar igualmente",
+              "ejecutar igualmente", "permitir",
+              # Italian (Italy + Switzerland)
+              "mantieni", "mantieni comunque", "mantieni il file",
+              "scarica comunque", "esegui comunque", "consenti",
+              "tieni", "tieni comunque",
+              # Dutch (Netherlands + Belgium)
+              "bewaren", "toch bewaren", "bestand bewaren",
+              "toch downloaden", "toch uitvoeren",
+              "toestaan", "behouden", "toch behouden",
+              # Polish (Poland)
+              "zachowaj", "zachowaj mimo to", "zachowaj plik",
+              "pobierz mimo to", "uruchom mimo to",
+              "zezwól", "zatrzymaj", "zatrzymaj mimo to",
+              # Vietnamese (Vietnam)
+              "giữ lại", "vẫn giữ", "giữ tệp",
+              "vẫn tải xuống", "vẫn chạy", "cho phép",
+              # Indonesian (Indonesia)
+              "simpan", "tetap simpan", "simpan file",
+              "tetap unduh", "tetap jalankan", "izinkan",
+          ]
+
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL OPERA ONE POST-INSTALL BUTTON KEYWORDS
+          # ══════════════════════════════════════════════════════════════════════
+
+          # "Next" button in all supported languages
+          OPERA_NEXT_KEYWORDS =[
+              # English
+              "next", "next step", "continue", "proceed",
+              # French
+              "suivant", "étape suivante", "continuer",
+              # Portuguese / Brazilian
+              "próximo", "proximo", "próxima", "seguinte",
+              "continuar", "avançar", "avancar",
+              # German
+              "weiter", "nächste", "nachste", "nächster schritt",
+              "fortfahren",
+              # Spanish
+              "siguiente", "próximo", "continuar", "avanzar",
+              # Italian
+              "avanti", "successivo", "continua", "prossimo",
+              # Dutch
+              "volgende", "verder", "doorgaan",
+              # Polish
+              "dalej", "następny", "nastepny", "kontynuuj",
+              # Vietnamese
+              "tiếp theo", "tiep theo", "tiếp tục", "tiep tuc",
+              # Indonesian
+              "selanjutnya", "lanjut", "berikutnya",
+          ]
+
+          # "Done" / "Finish" button in all supported languages
+          OPERA_DONE_KEYWORDS =[
+              # English
+              "done", "finish", "complete", "close", "finalize",
+              # French
+              "terminé", "termine", "terminer", "fin", "fermer",
+              "finaliser",
+              # Portuguese / Brazilian
+              "concluído", "concluido", "concluir", "finalizar",
+              "fechar", "pronto", "fim",
+              # German
+              "fertig", "abschließen", "abschliessen", "beenden",
+              "schließen", "schliessen",
+              # Spanish
+              "listo", "finalizar", "terminar", "cerrar",
+              "completar",
+              # Italian
+              "fatto", "finito", "completato", "chiudi",
+              "termina", "finalizza",
+              # Dutch
+              "klaar", "afsluiten", "voltooien", "sluiten",
+              "beëindigen", "beeindigen",
+              # Polish
+              "gotowe", "zakończ", "zakoncz", "zamknij",
+              "zakończono", "zakonczono",
+              # Vietnamese
+              "xong", "hoàn thành", "hoan thanh", "đóng", "dong",
+              # Indonesian
+              "selesai", "tutup", "akhiri",
+          ]
+
+          # "Submit" button in all supported languages
+          OPERA_SUBMIT_KEYWORDS =[
+              # English
+              "submit", "send", "confirm", "apply", "save",
+              # French
+              "soumettre", "envoyer", "confirmer", "appliquer",
+              "sauvegarder", "valider",
+              # Portuguese / Brazilian
+              "enviar", "confirmar", "aplicar", "salvar",
+              "submeter",
+              # German
+              "senden", "absenden", "bestätigen", "bestatigen",
+              "anwenden", "speichern",
+              # Spanish
+              "enviar", "confirmar", "aplicar", "guardar",
+              "aceptar",
+              # Italian
+              "invia", "conferma", "applica", "salva",
+              "sottometti",
+              # Dutch
+              "verzenden", "bevestigen", "toepassen", "opslaan",
+              "indienen",
+              # Polish
+              "wyślij", "wyslij", "potwierdź", "potwierdz",
+              "zastosuj", "zapisz",
+              # Vietnamese
+              "gửi", "gui", "xác nhận", "xac nhan", "áp dụng",
+              "lưu", "luu",
+              # Indonesian
+              "kirim", "konfirmasi", "terapkan", "simpan",
+          ]
+
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL PROXY AUTH DETECTION
+          # ══════════════════════════════════════════════════════════════════════
+
+          PROXY_AUTH_TITLE_KEYWORDS =[
+              "sign in", "authentication required", "proxy authentication",
+              "connect to", "enter credentials", "network authentication",
+              "proxy auth", "enter network credentials", "authentication",
+              "proxy", "credential",
+              "connexion", "authentification", "se connecter", "identifiants",
+              "s'identifier", "saisir les informations", "informations d'identification",
+              "entrar", "autenticação", "autenticacao", "conectar",
+              "credenciais", "fazer login", "identificação", "identificacao",
+              "anmelden", "anmeldung", "authentifizierung", "verbinden",
+              "anmeldedaten", "zugangsdaten", "netzwerkauthentifizierung",
+              "iniciar sesión", "iniciar sesion", "autenticación", "autenticacion",
+              "conectarse", "credenciales", "identificarse",
+              "accedi", "accesso", "autenticazione", "connetti",
+              "credenziali", "immettere le credenziali",
+              "aanmelden", "inloggen", "authenticatie", "verbinding maken",
+              "referenties", "netwerkauthenticatie",
+              "zaloguj", "uwierzytelnianie", "połącz", "polacz",
+              "dane logowania", "poświadczenia", "poswiadczenia",
+              "đăng nhập", "xác thực", "kết nối", "thông tin xác thực",
+              "masuk", "autentikasi", "sambungkan", "kredensial",
+              "войти", "аутентификация", "подключиться", "учётные данные",
+              "giriş", "kimlik doğrulama", "bağlan", "kimlik bilgileri",
+              "登录", "身份验证", "连接", "凭据",
+              "サインイン", "認証", "接続", "資格情報",
+              "로그인", "인증", "연결", "자격 증명",
+          ]
+
+          USERNAME_FIELD_KEYWORDS =[
+              "username", "user name", "user", "login", "account", "email",
+              "nom d'utilisateur", "nom d utilisateur", "utilisateur", "identifiant",
+              "courriel", "adresse e-mail",
+              "nome de usuário", "nome de usuario", "usuário", "usuario",
+              "utilizador", "nome de utilizador",
+              "benutzername", "benutzer", "anmeldename", "kennung",
+              "nombre de usuario", "usuario", "nombre usuario",
+              "nome utente", "utente", "nome d'utente",
+              "gebruikersnaam", "gebruiker",
+              "nazwa użytkownika", "nazwa uzytkownika", "użytkownik", "uzytkownik",
+              "tên người dùng", "tài khoản",
+              "nama pengguna", "pengguna",
+              "имя пользователя", "логин",
+              "kullanıcı adı", "kullanici adi",
+          ]
+
+          PASSWORD_FIELD_KEYWORDS =[
+              "password", "pass", "passwd", "secret", "pin",
+              "mot de passe", "mdp",
+              "senha", "palavra-passe",
+              "passwort", "kennwort", "geheimwort",
+              "contraseña", "contrasena", "clave",
+              "parola d'ordine", "parola chiave", "codice",
+              "wachtwoord",
+              "hasło", "haslo",
+              "mật khẩu",
+              "kata sandi",
+              "пароль",
+              "şifre", "sifre", "parola",
+          ]
+
+          SUBMIT_BUTTON_KEYWORDS =[
+              "sign in", "ok", "connect", "login", "submit", "authenticate",
+              "continue", "proceed", "confirm", "accept",
+              "connexion", "se connecter", "continuer", "confirmer", "accepter", "valider",
+              "entrar", "continuar", "confirmar", "aceitar", "conectar",
+              "anmelden", "verbinden", "weiter", "bestätigen", "bestatigen", "akzeptieren",
+              "iniciar sesión", "iniciar sesion", "continuar", "aceptar", "confirmar",
+              "accedi", "continua", "conferma", "accetta",
+              "aanmelden", "inloggen", "doorgaan", "bevestigen",
+              "zaloguj", "połącz", "polacz", "kontynuuj", "potwierdź", "potwierdz",
+              "đăng nhập", "tiếp tục", "xác nhận",
+              "masuk", "lanjutkan", "konfirmasi",
+              "войти", "подключиться", "продолжить",
+              "giriş yap", "bağlan", "devam", "onayla",
+          ]
+
+          ADDRESS_BAR_NAMES =[
+              "address and search bar", "address bar", "search bar",
+              "omnibox", "location bar", "url bar", "address",
+              "barre d'adresse", "barra de endereços", "adressleiste",
+              "barra de direcciones", "barra degli indirizzi",
+              "adresbalk", "pasek adresu", "thanh địa chỉ", "bilah alamat",
+          ]
+
+          ADDRESS_BAR_AUTOMATION_IDS =[
+              "addressEditBox", "addressField", "locationBar",
+              "view_1", "omnibox",
+          ]
+
+          def _is_address_bar_control(ctrl):
+              try:
+                  wt  = (ctrl.window_text() or "").lower().strip()
+                  aid = ""
+                  cls = ""
+                  try:
+                      aid = (ctrl.element_info.automation_id or "").lower()
+                  except Exception:
+                      pass
+                  try:
+                      cls = (ctrl.element_info.class_name or "").lower()
+                  except Exception:
+                      pass
+                  for name in ADDRESS_BAR_NAMES:
+                      if name in wt or name in aid:
+                          return True
+                  for aid_kw in ADDRESS_BAR_AUTOMATION_IDS:
+                      if aid_kw.lower() in aid:
+                          return True
+                  if "omnibox" in cls or "addressbar" in cls:
+                      return True
+              except Exception:
+                  pass
+              return False
+
+          def _matches_any(text, keyword_list):
+              if not text:
+                  return False
+              tl = text.lower().strip()
+              return any(kw.lower() in tl for kw in keyword_list)
+
+          def _matches_any_exact_start(text, keyword_list):
+              if not text:
+                  return False
+              tl = text.lower().strip()
+              for kw in keyword_list:
+                  kwl = kw.lower().strip()
+                  if tl == kwl or tl.startswith(kwl):
+                      return True
+              return False
+
+          def _is_proxy_auth_dialog(window_text):
+              if not window_text:
+                  return False
+              return _matches_any(window_text, PROXY_AUTH_TITLE_KEYWORDS)
+
+          def _find_username_fields(container):
+              results =[]
+              try:
+                  all_edits = container.descendants(control_type="Edit")
+                  for ctrl in all_edits:
+                      if _is_address_bar_control(ctrl):
+                          continue
+                      try:
+                          wt = ctrl.window_text() or ""
+                      except Exception:
+                          wt = ""
+                      try:
+                          name = ctrl.element_info.name or ""
+                      except Exception:
+                          name = ""
+                      label = (wt + " " + name).lower()
+                      if _matches_any(label, USERNAME_FIELD_KEYWORDS):
+                          results.append(ctrl)
+              except Exception:
+                  pass
+              return results
+
+          def _find_password_fields(container):
+              results =[]
+              try:
+                  all_edits = container.descendants(control_type="Edit")
+                  for ctrl in all_edits:
+                      if _is_address_bar_control(ctrl):
+                          continue
+                      try:
+                          wt = ctrl.window_text() or ""
+                      except Exception:
+                          wt = ""
+                      try:
+                          name = ctrl.element_info.name or ""
+                      except Exception:
+                          name = ""
+                      label = (wt + " " + name).lower()
+                      if _matches_any(label, PASSWORD_FIELD_KEYWORDS):
+                          results.append(ctrl)
+                          continue
+                      try:
+                          is_pwd = ctrl.get_property("IsPassword")
+                          if is_pwd:
+                              results.append(ctrl)
+                              continue
+                      except Exception:
+                          pass
+                      try:
+                          cls = ctrl.element_info.class_name or ""
+                          if "password" in cls.lower():
+                              results.append(ctrl)
+                      except Exception:
+                          pass
+              except Exception:
+                  pass
+              return results
+
+          def _find_submit_button(container):
+              try:
+                  for btn in container.descendants(control_type="Button"):
+                      try:
+                          wt = btn.window_text() or ""
+                      except Exception:
+                          wt = ""
+                      try:
+                          name = btn.element_info.name or ""
+                      except Exception:
+                          name = ""
+                      label = (wt + " " + name).strip()
+                      if _matches_any(label, SUBMIT_BUTTON_KEYWORDS):
+                          return btn
+              except Exception:
+                  pass
+              return None
+
+          def _is_auth_dialog_by_structure(window):
+              try:
+                  all_edits =[
+                      c for c in window.descendants(control_type="Edit")
+                      if not _is_address_bar_control(c)
+                  ]
+                  if len(all_edits) == 2:
+                      return all_edits[0], all_edits[1]
+              except Exception:
+                  pass
+              return None, None
+
+          def _is_download_done_window(text):
+              t = text.lower()
+              return any(frag.lower() in t for frag in DOWNLOAD_DONE_TITLES)
+
+          def _is_interference_window(text):
+              if not text:
+                  return False
+              for exact in INTERFERENCE_TITLES:
+                  if text.strip().lower() == exact.strip().lower():
+                      return True
+              tl = text.lower()
+              for sub in INTERFERENCE_SUBSTRINGS:
+                  if sub in tl:
+                      return True
+              return False
+
+          def _is_target_software_window(text, software_type):
+              if not text:
+                  return False
+              tl = text.lower()
+              if software_type == "avg":
+                  return "avg" in tl
+              elif software_type in ["opera_gx"]:
+                  return ("opera" in tl and "gx" in tl) or "opera gx" in tl
+              elif software_type in["opera_one", "opera_smart_link", "dynamic_opera", "ad_mvn"]:
+                  return "opera" in tl and "edge" not in tl and "chrome web store" not in tl
+              return False
+
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL DOWNLOAD BUTTON FINDER
+          # ══════════════════════════════════════════════════════════════════════
+          def find_download_button_multilingual(edge_window, software_type, label=""):
+              if edge_window is None:
+                  return None, None
+
+              if software_type in["opera_gx", "opera_one", "opera_smart_link",
+                                    "dynamic_opera", "ad_mvn"]:
+                  primary_keywords = OPERA_DOWNLOAD_KEYWORDS
+                  brand_label = "Opera"
+              elif software_type == "avg":
+                  primary_keywords = AVG_DOWNLOAD_KEYWORDS
+                  brand_label = "AVG"
+              else:
+                  primary_keywords = UNIVERSAL_DOWNLOAD_KEYWORDS
+                  brand_label = "Generic"
+
+              # Strategy 1: Brand-specific Button match
+              try:
+                  for btn in edge_window.descendants(control_type="Button"):
+                      try:
+                          txt = (btn.window_text() or "").strip()
+                      except Exception:
+                          txt = ""
+                      try:
+                          name = (btn.element_info.name or "").strip()
+                      except Exception:
+                          name = ""
+                      combined = (txt + " " + name).strip()
+                      if combined and _matches_any(combined, primary_keywords):
+                          log_msg("DL-Find", f"[{label}] Strategy1 ({brand_label} Button): '{combined[:60]}'")
+                          return btn, f"s1-{brand_label}-button"
+              except Exception as e:
+                  log_msg("DL-Find", f"[{label}] Strategy1 scan error: {e}")
+
+              # Strategy 2: Universal Button keyword match
+              try:
+                  for btn in edge_window.descendants(control_type="Button"):
+                      try:
+                          txt = (btn.window_text() or "").strip()
+                      except Exception:
+                          txt = ""
+                      try:
+                          name = (btn.element_info.name or "").strip()
+                      except Exception:
+                          name = ""
+                      combined = (txt + " " + name).strip()
+                      if combined and _matches_any(combined, UNIVERSAL_DOWNLOAD_KEYWORDS):
+                          if len(combined) > 2:
+                              log_msg("DL-Find", f"[{label}] Strategy2 (Universal Button): '{combined[:60]}'")
+                              return btn, "s2-universal-button"
+              except Exception as e:
+                  log_msg("DL-Find", f"[{label}] Strategy2 scan error: {e}")
+
+              # Strategy 3: Hyperlink / Text / Image with interstitial keywords
+              try:
+                  for el in edge_window.descendants():
+                      try:
+                          ctrl_type = el.element_info.control_type
+                      except Exception:
+                          continue
+                      if ctrl_type not in["Hyperlink", "Text", "Image"]:
+                          continue
+                      try:
+                          wt = (el.window_text() or "").strip()
+                      except Exception:
+                          wt = ""
+                      if not wt or len(wt) > 200:
+                          continue
+                      if "http" in wt.lower() or "www." in wt.lower():
+                          continue
+                      if _matches_any(wt, primary_keywords + INTERSTITIAL_LINK_KEYWORDS):
+                          if len(wt) <= 80:
+                              log_msg("DL-Find", f"[{label}] Strategy3 ({ctrl_type} link): '{wt[:60]}'")
+                              return el, f"s3-{ctrl_type.lower()}-link"
+              except Exception as e:
+                  log_msg("DL-Find", f"[{label}] Strategy3 scan error: {e}")
+
+              # Strategy 4: Broad last-resort scan
+              try:
+                  all_keywords_combined = list(set(
+                      primary_keywords + UNIVERSAL_DOWNLOAD_KEYWORDS + INTERSTITIAL_LINK_KEYWORDS
+                  ))
+                  for el in edge_window.descendants():
+                      try:
+                          ctrl_type = el.element_info.control_type
+                      except Exception:
+                          continue
+                      if ctrl_type not in["Button", "Hyperlink", "Text", "Image", "Custom"]:
+                          continue
+                      try:
+                          wt = (el.window_text() or "").strip()
+                      except Exception:
+                          wt = ""
+                      if not wt or len(wt) > 100:
+                          continue
+                      if "http" in wt.lower() or "www." in wt.lower():
+                          continue
+                      if _matches_any_exact_start(wt, all_keywords_combined):
+                          log_msg("DL-Find", f"[{label}] Strategy4 (broad scan, {ctrl_type}): '{wt[:60]}'")
+                          return el, f"s4-broad-{ctrl_type.lower()}"
+              except Exception as e:
+                  log_msg("DL-Find", f"[{label}] Strategy4 scan error: {e}")
+
+              log_msg("DL-Find", f"[{label}] No download element found after all 4 strategies.")
+              return None, None
+
+          def click_download_button_multilingual(edge_window, software_type, label=""):
+              element, strategy = find_download_button_multilingual(edge_window, software_type, label=label)
+              if element is None:
+                  return False
+
+              try:
+                  edge_window.set_focus()
+                  time.sleep(0.4)
+              except Exception:
+                  pass
+
+              try:
+                  element.click_input()
+                  log_msg("DL-Click", f"[{label}] click_input() succeeded via {strategy}.")
+                  return True
+              except Exception as e1:
+                  log_msg("DL-Click", f"[{label}] click_input() failed: {e1}")
+
+              try:
+                  element.invoke()
+                  log_msg("DL-Click", f"[{label}] invoke() succeeded via {strategy}.")
+                  return True
+              except Exception as e2:
+                  log_msg("DL-Click", f"[{label}] invoke() failed: {e2}")
+
+              try:
+                  rect = element.rectangle()
+                  cx = (rect.left + rect.right) // 2
+                  cy = (rect.top + rect.bottom) // 2
+                  pyautogui.moveTo(cx, cy, duration=0.25)
+                  time.sleep(0.15)
+                  pyautogui.click(cx, cy)
+                  log_msg("DL-Click", f"[{label}] pyautogui click at ({cx},{cy}) succeeded via {strategy}.")
+                  return True
+              except Exception as e3:
+                  log_msg("DL-Click", f"[{label}] pyautogui click failed: {e3}")
+
+              log_msg("DL-Click", f"[{label}] All click strategies exhausted for element via {strategy}.")
+              return False
+
+          def click_keep_button_multilingual(edge_window, label=""):
+              if edge_window is None:
+                  return False
+              
+              clicked = False
+
+              try:
+                  for btn in edge_window.descendants(control_type="Button"):
+                      try:
+                          txt = (btn.window_text() or "").strip()
+                      except Exception:
+                          txt = ""
+                      try:
+                          name = (btn.element_info.name or "").strip()
+                      except Exception:
+                          name = ""
+                      combined = (txt + " " + name).strip()
+                      if combined and _matches_any(combined, KEEP_DOWNLOAD_KEYWORDS):
+                          if len(combined) <= 60:
+                              log_msg("Keep", f"[{label}] Strategy1 (Button): '{combined[:50]}'")
+                              try:
+                                  edge_window.set_focus()
+                                  time.sleep(0.3)
+                                  btn.click_input()
+                                  log_msg("Keep", f"[{label}] click_input() on '{combined[:30]}' succeeded.")
+                                  return True
+                              except Exception as e1:
+                                  log_msg("Keep", f"[{label}] click_input() failed: {e1}")
+                                  try:
+                                      btn.invoke()
+                                      log_msg("Keep", f"[{label}] invoke() on '{combined[:30]}' succeeded.")
+                                      return True
+                                  except Exception as e2:
+                                      log_msg("Keep", f"[{label}] invoke() failed: {e2}")
+                                      try:
+                                          rect = btn.rectangle()
+                                          cx = (rect.left + rect.right) // 2
+                                          cy = (rect.top + rect.bottom) // 2
+                                          pyautogui.moveTo(cx, cy, duration=0.2)
+                                          time.sleep(0.1)
+                                          pyautogui.click(cx, cy)
+                                          log_msg("Keep", f"[{label}] pyautogui click at ({cx},{cy}) succeeded.")
+                                          return True
+                                      except Exception as e3:
+                                          log_msg("Keep", f"[{label}] pyautogui click failed: {e3}")
+              except Exception as e:
+                  log_msg("Keep", f"[{label}] Strategy1 scan error: {e}")
+
+              try:
+                  for container_type in["ToolBar", "Pane", "Group", "Custom"]:
+                      try:
+                          containers = edge_window.descendants(control_type=container_type)
+                      except Exception:
+                          continue
+                      for container in containers:
+                          try:
+                              for el in container.descendants():
+                                  try:
+                                      ctrl_type = el.element_info.control_type
+                                  except Exception:
+                                      continue
+                                  if ctrl_type not in["Button", "Hyperlink", "Text"]:
+                                      continue
+                                  try:
+                                      wt = (el.window_text() or "").strip()
+                                  except Exception:
+                                      wt = ""
+                                  try:
+                                      nm = (el.element_info.name or "").strip()
+                                  except Exception:
+                                      nm = ""
+                                  combined = (wt + " " + nm).strip()
+                                  if combined and len(combined) <= 60 and _matches_any(combined, KEEP_DOWNLOAD_KEYWORDS):
+                                      log_msg("Keep", f"[{label}] Strategy2 ({container_type}->{ctrl_type}): '{combined[:50]}'")
+                                      try:
+                                          edge_window.set_focus()
+                                          time.sleep(0.3)
+                                          el.click_input()
+                                          log_msg("Keep", f"[{label}] Strategy2 click_input() succeeded.")
+                                          return True
+                                      except Exception:
+                                          try:
+                                              el.invoke()
+                                              log_msg("Keep", f"[{label}] Strategy2 invoke() succeeded.")
+                                              return True
+                                          except Exception:
+                                              try:
+                                                  rect = el.rectangle()
+                                                  cx = (rect.left + rect.right) // 2
+                                                  cy = (rect.top + rect.bottom) // 2
+                                                  pyautogui.click(cx, cy)
+                                                  log_msg("Keep", f"[{label}] Strategy2 pyautogui click succeeded.")
+                                                  return True
+                                              except Exception:
+                                                  pass
+                          except Exception:
+                              pass
+              except Exception as e:
+                  log_msg("Keep", f"[{label}] Strategy2 scan error: {e}")
+
+              return False
+
+          def dismiss_interference_windows(desktop, software_type, label=""):
+              dismissed_any = False
+              try:
+                  all_windows = desktop.windows(visible_only=True)
+              except Exception:
+                  return False
+
+              for window in all_windows:
+                  try:
+                      wt = window.window_text()
+                      if not wt:
+                          continue
+                      if "Microsoft Edge" in wt or "msedge" in wt.lower():
+                          continue
+                      if _is_target_software_window(wt, software_type):
+                          continue
+                      if not _is_interference_window(wt):
+                          continue
+
+                      log_msg("WinGuard", f"Interference window detected: '{wt}' [{label}]")
+                      closed = False
+
+                      try:
+                          window.set_focus()
+                          time.sleep(0.25)
+                          send_keys('%{F4}')
+                          time.sleep(0.4)
+                          closed = True
+                          log_msg("WinGuard", f"Closed '{wt}' via Alt+F4.")
+                      except Exception as e:
+                          log_msg("WinGuard", f"Alt+F4 failed for '{wt}': {e}")
+
+                      if not closed:
+                          try:
+                              window.close()
+                              time.sleep(0.3)
+                              closed = True
+                              log_msg("WinGuard", f"Closed '{wt}' via window.close().")
+                          except Exception as e:
+                              log_msg("WinGuard", f"window.close() failed for '{wt}': {e}")
+
+                      if not closed:
+                          try:
+                              window.minimize()
+                              time.sleep(0.25)
+                              log_msg("WinGuard", f"Minimized '{wt}' as fallback.")
+                              closed = True
+                          except Exception as e:
+                              log_msg("WinGuard", f"minimize() failed for '{wt}': {e}")
+
+                      if closed:
+                          dismissed_any = True
+
+                  except Exception:
+                      pass
+
+              return dismissed_any
+
+          def robust_maximize_opera_window(desktop, software_type, label=""):
+              found_window = None
+
+              dismiss_interference_windows(desktop, software_type, label=f"{label}-pre-dismiss")
+              time.sleep(0.3)
+
+              for attempt in range(1, 6):
+                  log_msg("MaximizeOp", f"[{label}] Window search attempt {attempt}/5...")
+                  try:
+                      for w in desktop.windows(visible_only=True):
+                          wt = w.window_text()
+                          if wt and _is_target_software_window(wt, software_type):
+                              found_window = w
+                              log_msg("MaximizeOp", f"[{label}] Found Opera window: '{wt}'")
+                              break
+                  except Exception as e:
+                      log_msg("MaximizeOp", f"[{label}] Window search error: {e}")
+
+                  if found_window:
+                      break
+                  log_msg("MaximizeOp", f"[{label}] Opera window not found yet. Waiting 3s...")
+                  time.sleep(3)
+
+              if not found_window:
+                  log_msg("MaximizeOp", f"[{label}] ERROR: Opera window not found after 5 attempts.")
+                  return None
+
+              log_msg("MaximizeOp", f"[{label}] Starting robust maximize sequence...")
+
+              try:
+                  found_window.set_focus()
+                  time.sleep(0.4)
+                  found_window.maximize()
+                  time.sleep(0.5)
+                  log_msg("MaximizeOp", f"[{label}] Strategy 1 (pywinauto maximize): Applied.")
+              except Exception as e:
+                  log_msg("MaximizeOp", f"[{label}] Strategy 1 failed: {e}")
+
+              try:
+                  found_window.set_focus()
+                  time.sleep(0.3)
+                  send_keys('{VK_LWIN down}{UP}{VK_LWIN up}')
+                  time.sleep(0.4)
+                  send_keys('{VK_LWIN down}{UP}{VK_LWIN up}')
+                  time.sleep(0.4)
+                  log_msg("MaximizeOp", f"[{label}] Strategy 2 (Win+Up x2): Applied.")
+              except Exception as e:
+                  log_msg("MaximizeOp", f"[{label}] Strategy 2 failed: {e}")
+
+              try:
+                  hwnd = found_window.handle
+                  ctypes.windll.user32.ShowWindow(hwnd, 9)
+                  time.sleep(0.4)
+                  log_msg("MaximizeOp", f"[{label}] Strategy 3 (ctypes SW_MAXIMIZE): Applied.")
+              except Exception as e:
+                  log_msg("MaximizeOp", f"[{label}] Strategy 3 failed: {e}")
+
+              try:
+                  user32 = ctypes.windll.user32
+                  sw = user32.GetSystemMetrics(0)
+                  sh = user32.GetSystemMetrics(1)
+                  hwnd = found_window.handle
+                  user32.SetWindowPos(hwnd, -1, 0, 0, sw, sh, 0x0040 | 0x0020)
+                  time.sleep(0.3)
+                  user32.SetWindowPos(hwnd, -2, 0, 0, sw, sh, 0x0040 | 0x0020)
+                  time.sleep(0.3)
+                  log_msg("MaximizeOp", f"[{label}] Strategy 4 (SetWindowPos {sw}x{sh}): Applied.")
+              except Exception as e:
+                  log_msg("MaximizeOp", f"[{label}] Strategy 4 failed: {e}")
+
+              try:
+                  found_window.set_focus()
+                  time.sleep(0.2)
+                  found_window.maximize()
+                  time.sleep(0.3)
+                  found_window.set_focus()
+                  time.sleep(0.2)
+                  log_msg("MaximizeOp", f"[{label}] Strategy 5 (final focus+maximize): Applied.")
+              except Exception as e:
+                  log_msg("MaximizeOp", f"[{label}] Strategy 5 failed: {e}")
+
+              log_msg("MaximizeOp", f"[{label}] Robust maximize sequence complete. Window: '{found_window.window_text()}'")
+              return found_window
+
+          def force_maximize_and_focus_target(desktop, target_window, software_type, label=""):
+              dismiss_interference_windows(desktop, software_type, label=f"{label}-dismiss")
+              time.sleep(0.3)
+
+              found_window = target_window
+              if found_window is None:
+                  try:
+                      for w in desktop.windows(visible_only=True):
+                          wt = w.window_text()
+                          if wt and _is_target_software_window(wt, software_type):
+                              found_window = w
+                              break
+                  except Exception:
+                      pass
+
+              if found_window is None:
+                  log_msg("WinGuard", f"[{label}] No target window found to maximize/focus.")
+                  return None
+
+              try:
+                  found_window.set_focus()
+                  time.sleep(0.2)
+                  found_window.maximize()
+                  time.sleep(0.3)
+                  found_window.set_focus()
+                  time.sleep(0.2)
+                  log_msg("WinGuard", f"[{label}] Target window maximized and focused: '{found_window.window_text()}'")
+                  return found_window
+              except Exception as e:
+                  log_msg("WinGuard", f"[{label}] maximize/focus failed: {e}")
+                  return found_window
+
+          def close_download_windows(desktop, attempt_label=""):
+              closed_any = False
+              try:
+                  all_windows = desktop.windows(visible_only=True)
+              except Exception: return False
+
+              for window in all_windows:
+                  try:
+                      wt = window.window_text()
+                      if not wt: continue
+
+                      is_match = _is_download_done_window(wt)
+                      if not is_match and ("Microsoft Edge" in wt or wt == "Edge"):
+                          try:
+                              for child in window.children():
+                                  child_wt = child.window_text()
+                                  if child_wt and _is_download_done_window(child_wt):
+                                      is_match = True
+                                      break
+                          except Exception: pass
+
+                      if not is_match: continue
+
+                      log_msg("EdgeClose", f"Targeting Edge window '{wt}' for close (Attempt {attempt_label})")
+                      closed = False
+
+                      try:
+                          log_msg("EdgeClose", "Focusing Edge window...")
+                          window.set_focus()
+                          time.sleep(0.4)
+                          sw, sh = pyautogui.size()
+                          cx, cy = sw // 2, sh // 2
+                          pyautogui.click(cx, cy)
+                          time.sleep(0.5)
+                          log_msg("EdgeClose", "Sending Ctrl+W (1st) — close current tab...")
+                          send_keys('^w')
+                          time.sleep(0.5)
+                          log_msg("EdgeClose", "Sending Ctrl+W (2nd) — close remaining tabs...")
+                          send_keys('^w')
+                          time.sleep(0.4)
+                          closed = True
+                          log_msg("EdgeClose", "Ctrl+W executed successfully.")
+                      except Exception as e:
+                          log_msg("EdgeClose", f"Ctrl+W sequence failed: {e}")
+
+                      if not closed:
+                          try:
+                              window.set_focus()
+                              time.sleep(0.4)
+                              send_keys('^j')
+                              time.sleep(0.6)
+                              send_keys('^j')
+                              time.sleep(0.4)
+                              closed = True
+                              log_msg("EdgeClose", "Ctrl+J double-tap executed.")
+                          except Exception as e:
+                              log_msg("EdgeClose", f"Ctrl+J fallback failed: {e}")
+
+                      if not closed:
+                          try:
+                              window.set_focus()
+                              time.sleep(0.3)
+                              send_keys('%{F4}')
+                              closed = True
+                              log_msg("EdgeClose", "Alt+F4 fallback executed.")
+                          except Exception as e:
+                              log_msg("EdgeClose", f"Alt+F4 fallback failed: {e}")
+
+                      if closed:
+                          closed_any = True
+                          time.sleep(0.5)
+                  except Exception: pass
+              return closed_any
+
+          def refocus_target_window(target_window, software_type, label=""):
+              desktop = Desktop(backend="uia")
+              result = force_maximize_and_focus_target(desktop, target_window, software_type, label=label)
+              return result if result else target_window
+
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL OPERA BUTTON CLICKER
+          # ══════════════════════════════════════════════════════════════════════
+          def click_opera_button_multilingual(desktop, opera_window, software_type,
+                                              keyword_list, label="", fallback_coords=None):
+              try:
+                  target = opera_window
+                  if target is None or not target.is_visible():
+                      for w in desktop.windows(visible_only=True):
+                          wt = w.window_text()
+                          if wt and _is_target_software_window(wt, software_type):
+                              target = w
+                              break
+                  if not target:
+                      log_msg("MLBtn", f"[{label}] Target Opera window not found.")
+                      if fallback_coords:
+                          fx, fy = fallback_coords
+                          log_msg("MLBtn", f"[{label}] Fallback click at ({fx}, {fy})...")
+                          try:
+                              pyautogui.moveTo(fx, fy, duration=0.2)
+                              pyautogui.click(fx, fy)
+                              return True
+                          except Exception as ef:
+                              log_msg("MLBtn", f"[{label}] Fallback click failed: {ef}")
+                      return False
+
+                  target.set_focus()
+                  time.sleep(0.3)
+
+                  # Pass 1: exact title match against each keyword
+                  for kw in keyword_list:
+                      try:
+                          btns = target.descendants(control_type="Button", title=kw)
+                          if btns:
+                              try:
+                                  btns[0].click_input()
+                                  log_msg("MLBtn", f"[{label}] Clicked '{kw}' via exact title match.")
+                                  return True
+                              except Exception as e:
+                                  log_msg("MLBtn", f"[{label}] click_input on exact '{kw}' failed: {e}")
+                      except Exception:
+                          pass
+
+                  # Pass 2: partial text match on all Button descendants
+                  for btn in target.descendants(control_type="Button"):
+                      try:
+                          txt = (btn.window_text() or "").strip()
+                          nm  = (btn.element_info.name or "").strip()
+                          combined = (txt + " " + nm).strip()
+                      except Exception:
+                          continue
+                      if combined and _matches_any(combined, keyword_list):
+                          try:
+                              btn.click_input()
+                              log_msg("MLBtn", f"[{label}] Clicked '{combined[:40]}' via partial keyword match.")
+                              return True
+                          except Exception as e:
+                              log_msg("MLBtn", f"[{label}] Partial match click failed for '{combined[:40]}': {e}")
+
+                  # Pass 3: scan all descendants
+                  for el in target.descendants():
+                      try:
+                          ctrl_type = el.element_info.control_type
+                      except Exception:
+                          continue
+                      if ctrl_type not in ["Button", "Hyperlink", "Text", "Custom"]:
+                          continue
+                      try:
+                          txt = (el.window_text() or "").strip()
+                      except Exception:
+                          txt = ""
+                      if not txt or len(txt) > 80:
+                          continue
+                      if _matches_any(txt, keyword_list):
+                          try:
+                              el.click_input()
+                              log_msg("MLBtn", f"[{label}] Clicked '{txt[:40]}' via generic descendant scan.")
+                              return True
+                          except Exception as e:
+                              log_msg("MLBtn", f"[{label}] Descendant click failed for '{txt[:40]}': {e}")
+
+              except Exception as e:
+                  log_msg("MLBtn", f"[{label}] Exception during multilingual button click: {e}")
+
+              # Fallback: coordinate click
+              if fallback_coords:
+                  fx, fy = fallback_coords
+                  log_msg("MLBtn", f"[{label}] All passes failed — fallback click at ({fx}, {fy}).")
+                  try:
+                      pyautogui.moveTo(fx, fy, duration=0.2)
+                      pyautogui.click(fx, fy)
+                      return True
+                  except Exception as ef:
+                      log_msg("MLBtn", f"[{label}] Fallback click also failed: {ef}")
+
+              return False
+
+          def click_opera_button(desktop, opera_window, software_type, button_names, label=""):
+              sw, sh = pyautogui.size()
+              fallback = (sw // 2, int(sh * 0.80))
+              return click_opera_button_multilingual(
+                  desktop, opera_window, software_type,
+                  keyword_list=button_names,
+                  label=label,
+                  fallback_coords=fallback
+              )
+
+          # ══════════════════════════════════════════════════════════════════════
+          # MULTILINGUAL PROXY AUTH INJECTION
+          # ══════════════════════════════════════════════════════════════════════
+          def inject_proxy_auth(window, label=""):
+              if not USE_PROXY or not PROXY_USER or not PROXY_PASS:
+                  return False
+
+              try:
+                  user_fields = _find_username_fields(window)
+                  pass_fields = _find_password_fields(window)
+
+                  if not user_fields or not pass_fields:
+                      u_struct, p_struct = _is_auth_dialog_by_structure(window)
+                      if u_struct and p_struct:
+                          log_msg("ProxyAuth", f"[{label}] Using structural detection (2-field dialog).")
+                          user_fields =[u_struct]
+                          pass_fields = [p_struct]
+
+                  if user_fields and pass_fields:
+                      if _is_address_bar_control(user_fields[0]) or _is_address_bar_control(pass_fields[0]):
+                          log_msg("ProxyAuth", f"[{label}] BLOCKED — detected fields are address/URL bars. Skipping.")
+                          return False
+
+                      log_msg("ProxyAuth", f"[{label}] Auth dialog — injecting {PROXY_TYPE} credentials. "
+                              f"User={PROXY_USER[:25]}... | Fields found via multilingual match.")
+                      window.set_focus()
+                      time.sleep(0.5)
+
+                      try:
+                          user_fields[0].click_input()
+                          time.sleep(0.2)
+                          send_keys('^a')
+                          time.sleep(0.1)
+                          send_keys('{DELETE}')
+                          time.sleep(0.1)
+                          user_fields[0].type_keys(PROXY_USER, with_spaces=True, pause=0.02)
+                          time.sleep(0.3)
+                      except Exception as eu:
+                          log_msg("ProxyAuth", f"[{label}] Username field type failed: {eu}")
+
+                      try:
+                          pass_fields[0].click_input()
+                          time.sleep(0.2)
+                          send_keys('^a')
+                          time.sleep(0.1)
+                          send_keys('{DELETE}')
+                          time.sleep(0.1)
+                          pass_fields[0].type_keys(PROXY_PASS, with_spaces=True, pause=0.02)
+                          time.sleep(0.3)
+                      except Exception as ep:
+                          log_msg("ProxyAuth", f"[{label}] Password field type failed: {ep}")
+
+                      signed_in = False
+                      submit_btn = _find_submit_button(window)
+                      if submit_btn:
+                          try:
+                              submit_btn.click_input()
+                              btn_text = submit_btn.window_text() or "?"
+                              log_msg("ProxyAuth", f"[{label}] Clicked submit button: '{btn_text}'. Auth submitted.")
+                              signed_in = True
+                          except Exception as eb:
+                              log_msg("ProxyAuth", f"[{label}] Submit button click failed: {eb}")
+
+                      if not signed_in:
+                          try:
+                              pass_fields[0].click_input()
+                              time.sleep(0.2)
+                              send_keys('{ENTER}')
+                              log_msg("ProxyAuth", f"[{label}] Submitted via ENTER key fallback.")
+                              signed_in = True
+                          except Exception as ek:
+                              log_msg("ProxyAuth", f"[{label}] ENTER fallback also failed: {ek}")
+
+                      return signed_in
+
+                  else:
+                      wt = ""
+                      try:
+                          wt = window.window_text() or ""
+                      except Exception:
+                          pass
+
+                      if not _is_proxy_auth_dialog(wt):
+                          log_msg("ProxyAuth", f"[{label}] No auth fields found and window '{wt}' "
+                                  "does not look like an auth dialog. Skipping keyboard injection.")
+                          return False
+
+                      log_msg("ProxyAuth", f"[{label}] No Edit fields found — trying keyboard Tab injection "
+                              f"(window='{wt}').")
+                      window.set_focus()
+                      time.sleep(0.5)
+                      send_keys('^a{DELETE}')
+                      time.sleep(0.1)
+                      for ch in PROXY_USER:
+                          send_keys(ch if ch.isalnum() or ch in '.-_=@' else '{%s}' % ch)
+                          time.sleep(0.01)
+                      send_keys('{TAB}')
+                      time.sleep(0.3)
+                      send_keys('^a{DELETE}')
+                      time.sleep(0.1)
+                      for ch in PROXY_PASS:
+                          send_keys(ch if ch.isalnum() or ch in '.-_=@' else '{%s}' % ch)
+                          time.sleep(0.01)
+                      time.sleep(0.2)
+                      send_keys('{ENTER}')
+                      log_msg("ProxyAuth", f"[{label}] Keyboard-only auth submitted.")
+                      return True
+
+              except Exception as e:
+                  log_msg("ProxyAuth", f"[{label}] inject_proxy_auth exception: {e}")
+                  return False
+
+          # ══════════════════════════════════════════════════════════════════════
+          # OPERA ONE POST-INSTALL SEQUENCE
+          # ══════════════════════════════════════════════════════════════════════
+          def opera_one_post_install_sequence(opera_window, software_type="opera_one"):
+              log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Starting (Multilingual) ===")
+              desktop = Desktop(backend="uia")
+
+              log_msg("PostInstall-OP1", "STEP 1: Waiting 50 seconds for Opera One to fully initialize...")
+              for s in range(1, 51):
+                  log_msg("PostInstall-OP1", f"  Initialization wait: {s}/50 seconds...")
+                  time.sleep(1)
+              log_msg("PostInstall-OP1", "STEP 1 COMPLETE: 50-second initialization wait finished.")
+
+              log_msg("PostInstall-OP1", "STEP 2: Locating Opera One window and applying full-screen maximize...")
+              desktop = Desktop(backend="uia")
+              opera_window = robust_maximize_opera_window(desktop, software_type, label="step2-fullscreen")
+              if opera_window is None:
+                  log_msg("PostInstall-OP1", "STEP 2 WARNING: Could not find Opera window. Proceeding anyway...")
+              else:
+                  log_msg("PostInstall-OP1", f"STEP 2 COMPLETE: Opera window maximized -> '{opera_window.window_text()}'")
+
+              log_msg("PostInstall-OP1", "STEP 3: Waiting 5 seconds after maximize...")
+              for s in range(1, 6):
+                  log_msg("PostInstall-OP1", f"  Post-maximize wait: {s}/5 seconds...")
+                  time.sleep(1)
+              log_msg("PostInstall-OP1", "STEP 3 COMPLETE.")
+
+              log_msg("PostInstall-OP1", "STEP 4: Additional 5-second settle wait...")
+              for s in range(1, 6):
+                  log_msg("PostInstall-OP1", f"  Settle wait: {s}/5 seconds...")
+                  time.sleep(1)
+              log_msg("PostInstall-OP1", "STEP 4 COMPLETE.")
+
+              sw, sh = pyautogui.size()
+              cx, cy = sw // 2, sh // 2
+              log_msg("PostInstall-OP1", f"STEP 5: Clicking center of screen at ({cx}, {cy}) using mouse...")
+              desktop = Desktop(backend="uia")
+              opera_window = force_maximize_and_focus_target(desktop, opera_window, software_type, label="step5-pre-click")
+              try:
+                  pyautogui.moveTo(cx, cy, duration=0.3)
+                  time.sleep(0.2)
+                  pyautogui.click(cx, cy)
+                  log_msg("PostInstall-OP1", f"STEP 5 COMPLETE: Mouse click executed at ({cx}, {cy}).")
+              except Exception as e:
+                  log_msg("PostInstall-OP1", f"STEP 5 ERROR: Mouse click failed: {e}")
+
+              log_msg("PostInstall-OP1", "STEP 6: Waiting 5 seconds after center click...")
+              for s in range(1, 6):
+                  log_msg("PostInstall-OP1", f"  Post-click wait: {s}/5 seconds...")
+                  time.sleep(1)
+              log_msg("PostInstall-OP1", "STEP 6 COMPLETE.")
+
+              # ── STEP 7: Click "Next" 6 times — MULTILINGUAL ────────────────────
+              log_msg("PostInstall-OP1", "STEP 7: Clicking 'Next' button 6 times (multilingual, 2s delay each)...")
+              for i in range(1, 7):
+                  desktop = Desktop(backend="uia")
+                  opera_window = force_maximize_and_focus_target(
+                      desktop, opera_window, software_type, label=f"step7-NEXT-{i}"
+                  )
+                  log_msg("PostInstall-OP1", f"  Next click attempt {i}/6 (multilingual)...")
+                  sw_now, sh_now = pyautogui.size()
+                  
+                  # Robust center/bottom-center fallback coordinate mapping standard across languages
+                  fallback_next = (sw_now // 2, int(sh_now * 0.80))
+                  
+                  clicked = click_opera_button_multilingual(
+                      desktop, opera_window, software_type,
+                      keyword_list=OPERA_NEXT_KEYWORDS,
+                      label=f"NEXT-{i}",
+                      fallback_coords=fallback_next
+                  )
+                  if clicked:
+                      log_msg("PostInstall-OP1", f"  Next {i}/6 clicked successfully (multilingual).")
+                  else:
+                      log_msg("PostInstall-OP1", f"  Next {i}/6 not found via multilingual scan — fallback already attempted.")
+                  log_msg("PostInstall-OP1", f"  Waiting 2 seconds after Next click {i}...")
+                  time.sleep(2)
+              log_msg("PostInstall-OP1", "STEP 7 COMPLETE: All 6 Next clicks attempted (multilingual).")
+
+              # ── STEP 7b: Click "Done" — MULTILINGUAL ──────────────────────────
+              log_msg("PostInstall-OP1", "STEP 7b: Clicking 'Done'/'Finish' button (multilingual)...")
+              desktop = Desktop(backend="uia")
+              opera_window = force_maximize_and_focus_target(
+                  desktop, opera_window, software_type, label="step7b-DONE"
+              )
+              sw_now, sh_now = pyautogui.size()
+              fallback_done = (sw_now // 2, int(sh_now * 0.80))
+              clicked_done = click_opera_button_multilingual(
+                  desktop, opera_window, software_type,
+                  keyword_list=OPERA_DONE_KEYWORDS,
+                  label="DONE",
+                  fallback_coords=fallback_done
+              )
+              if clicked_done:
+                  log_msg("PostInstall-OP1", "STEP 7b COMPLETE: 'Done'/'Finish' clicked successfully (multilingual).")
+              else:
+                  log_msg("PostInstall-OP1", "STEP 7b: Multilingual Done not found — fallback already attempted.")
+
+              log_msg("PostInstall-OP1", "STEP 8: Waiting 5 seconds after Done click...")
+              for s in range(1, 6):
+                  log_msg("PostInstall-OP1", f"  Post-Done wait: {s}/5 seconds...")
+                  time.sleep(1)
+              log_msg("PostInstall-OP1", "STEP 8 COMPLETE.")
+
+              log_msg("PostInstall-OP1", "STEP 9: Pressing ENTER key...")
+              desktop = Desktop(backend="uia")
+              opera_window = force_maximize_and_focus_target(
+                  desktop, opera_window, software_type, label="step9-ENTER"
+              )
+              send_keys('{ENTER}')
+              log_msg("PostInstall-OP1", "STEP 9 COMPLETE: ENTER key pressed.")
+
+              log_msg("PostInstall-OP1", "STEP 10: Waiting 5 seconds after ENTER...")
+              for s in range(1, 6):
+                  log_msg("PostInstall-OP1", f"  Post-ENTER wait: {s}/5 seconds...")
+                  time.sleep(1)
+              log_msg("PostInstall-OP1", "STEP 10 COMPLETE.")
+
+              # ── STEP 11: Click "Submit" — MULTILINGUAL ─────────────────────────
+              log_msg("PostInstall-OP1", "STEP 11: Clicking 'Submit' button (multilingual)...")
+              desktop = Desktop(backend="uia")
+              opera_window = force_maximize_and_focus_target(
+                  desktop, opera_window, software_type, label="step11-SUBMIT"
+              )
+              sw_now, sh_now = pyautogui.size()
+              fallback_submit = (sw_now // 2, int(sh_now * 0.85))
+              clicked_submit = click_opera_button_multilingual(
+                  desktop, opera_window, software_type,
+                  keyword_list=OPERA_SUBMIT_KEYWORDS,
+                  label="SUBMIT",
+                  fallback_coords=fallback_submit
+              )
+              if clicked_submit:
+                  log_msg("PostInstall-OP1", "STEP 11 COMPLETE: 'Submit' clicked successfully (multilingual).")
+              else:
+                  log_msg("PostInstall-OP1", "STEP 11: Multilingual Submit not found — fallback already attempted.")
+
+              log_msg("PostInstall-OP1", "STEP 12: Waiting 5 seconds after Submit click...")
+              for s in range(1, 6):
+                  log_msg("PostInstall-OP1", f"  Post-Submit wait: {s}/5 seconds...")
+                  time.sleep(1)
+              log_msg("PostInstall-OP1", "STEP 12 COMPLETE.")
+
+              log_msg("PostInstall-OP1", "STEP 13: Starting TAB cycle sequence (8 TABs → 18 TABs)...")
+              tab_sequence = list(range(8, 19))
+              log_msg("PostInstall-OP1", f"  TAB sequence plan: {tab_sequence}")
+
+              for cycle_idx, tab_count in enumerate(tab_sequence):
+                  log_msg("PostInstall-OP1", f"--- TAB CYCLE {cycle_idx + 1}/{len(tab_sequence)}: {tab_count} TAB presses ---")
+
+                  desktop = Desktop(backend="uia")
+                  opera_window = force_maximize_and_focus_target(
+                      desktop, opera_window, software_type, label=f"cycle{cycle_idx+1}-pre-CtrlT"
+                  )
+                  log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Pressing Ctrl+T (before TABs)...")
+                  send_keys('^t')
+                  log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Ctrl+T sent. Waiting 5 seconds...")
+                  for s in range(1, 6):
+                      log_msg("PostInstall-OP1", f"    Pre-TAB wait: {s}/5 seconds...")
+                      time.sleep(1)
+                  log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Pre-TAB wait complete.")
+
+                  log_msg("PostInstall-OP1", f"  Pressing TAB key {tab_count} times (1 second delay between each)...")
+                  for i in range(1, tab_count + 1):
+                      desktop = Desktop(backend="uia")
+                      opera_window = force_maximize_and_focus_target(
+                          desktop, opera_window, software_type,
+                          label=f"cycle{cycle_idx+1}-TAB{tab_count}-press{i}"
+                      )
+                      log_msg("PostInstall-OP1", f"    TAB press {i}/{tab_count} (cycle {cycle_idx + 1})...")
+                      send_keys('{TAB}')
+                      log_msg("PostInstall-OP1", f"    TAB {i}/{tab_count} sent. Waiting 1 second...")
+                      time.sleep(1)
+
+                  desktop = Desktop(backend="uia")
+                  opera_window = force_maximize_and_focus_target(
+                      desktop, opera_window, software_type, label=f"cycle{cycle_idx+1}-ENTER"
+                  )
+                  log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Pressing ENTER after {tab_count} TABs...")
+                  send_keys('{ENTER}')
+                  log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: ENTER sent.")
+
+                  log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Waiting 5 seconds after ENTER...")
+                  for s in range(1, 6):
+                      log_msg("PostInstall-OP1", f"    Post-ENTER wait: {s}/5 seconds...")
+                      time.sleep(1)
+
+                  desktop = Desktop(backend="uia")
+                  opera_window = force_maximize_and_focus_target(
+                      desktop, opera_window, software_type, label=f"cycle{cycle_idx+1}-post-CtrlT"
+                  )
+                  log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Pressing Ctrl+T (after TABs)...")
+                  send_keys('^t')
+                  log_msg("PostInstall-OP1", f"  Cycle {cycle_idx + 1}: Ctrl+T sent. Waiting 5 seconds...")
+                  for s in range(1, 6):
+                      log_msg("PostInstall-OP1", f"    Post-CtrlT wait: {s}/5 seconds...")
+                      time.sleep(1)
+                  log_msg("PostInstall-OP1", f"--- TAB CYCLE {cycle_idx + 1}/{len(tab_sequence)} COMPLETE ---")
+
+              log_msg("PostInstall-OP1", "STEP 13 COMPLETE: All TAB cycles finished.")
+              log_msg("PostInstall-OP1", "=== Opera One Post-Install Sequence Completed Successfully (Multilingual) ===")
+
+          def opera_gx_post_install_sequence(opera_window):
+              log_msg("PostInstall-OPGX", "=== Opera GX Post-Install Sequence Starting ===")
+              desktop = Desktop(backend="uia")
+
+              opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label="init")
+              time.sleep(0.5)
+
+              sw, sh = pyautogui.size()
+              cx, cy = sw // 2, sh // 2
+
+              log_msg("PostInstall-OPGX", f"Double-clicking center screen ({cx}, {cy})...")
+              try:
+                  opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label="pre-dblclick")
+                  pyautogui.click(cx, cy)
+                  time.sleep(0.15)
+                  pyautogui.click(cx, cy)
+                  log_msg("PostInstall-OPGX", "Double-click executed.")
+              except Exception as e:
+                  log_msg("PostInstall-OPGX", f"Double-click failed: {e}")
+
+              d = random.uniform(2.0, 3.0)
+              time.sleep(d)
+
+              log_msg("PostInstall-OPGX", "Pressing TAB key 4 times (1-2s delay each)...")
+              for i in range(1, 5):
+                  opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"pre-TAB4-{i}")
+                  log_msg("PostInstall-OPGX", f"  Sending TAB ({i}/4)...")
+                  send_keys('{TAB}')
+                  d = random.uniform(1.0, 2.0)
+                  time.sleep(d)
+
+              log_msg("PostInstall-OPGX", "Pressing ENTER key 8 times (1-2s delay each)...")
+              for i in range(1, 9):
+                  opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"ENTER8-{i}")
+                  log_msg("PostInstall-OPGX", f"  Sending ENTER ({i}/8)...")
+                  send_keys('{ENTER}')
+                  d = random.uniform(1.0, 2.0)
+                  time.sleep(d)
+
+              d = random.uniform(2.0, 3.0)
+              time.sleep(d)
+
+              log_msg("PostInstall-OPGX", "Pressing TAB key 6 times (1-2s delay each)...")
+              for i in range(1, 7):
+                  opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"TAB6-{i}")
+                  log_msg("PostInstall-OPGX", f"  Sending TAB ({i}/6)...")
+                  send_keys('{TAB}')
+                  d = random.uniform(1.0, 2.0)
+                  time.sleep(d)
+
+              opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label="post-TAB6-ENTER")
+              log_msg("PostInstall-OPGX", "Sending ENTER...")
+              send_keys('{ENTER}')
+              log_msg("PostInstall-OPGX", "Waiting 5 seconds...")
+              for s in range(1, 6):
+                  if s % 2 == 0:
+                      opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"wait5-{s}")
+                  time.sleep(1)
+
+              for tab_count in range(7, 17):
+                  opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"pre-CtrlT-{tab_count}")
+                  log_msg("PostInstall-OPGX", f"Sending Ctrl+T for cycle TAB {tab_count}...")
+                  send_keys('^t')
+                  log_msg("PostInstall-OPGX", f"Pressing TAB key {tab_count} times (1-2s delay each)...")
+                  for i in range(1, tab_count + 1):
+                      opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"TAB{tab_count}-{i}")
+                      log_msg("PostInstall-OPGX", f"  Sending TAB ({i}/{tab_count})...")
+                      send_keys('{TAB}')
+                      d = random.uniform(1.0, 2.0)
+                      time.sleep(d)
+                  opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"post-TAB{tab_count}-ENTER")
+                  log_msg("PostInstall-OPGX", f"Sending ENTER after {tab_count} TABs...")
+                  send_keys('{ENTER}')
+                  log_msg("PostInstall-OPGX", "Waiting 5 seconds...")
+                  for s in range(1, 6):
+                      if s % 2 == 0:
+                          opera_window = force_maximize_and_focus_target(desktop, opera_window, "opera_gx", label=f"wait5-loop{tab_count}-{s}")
+                      time.sleep(1)
+
+              log_msg("PostInstall-OPGX", "=== Opera GX Post-Install Sequence Completed Successfully ===")
+
+          def avg_post_install_sequence(avg_window):
+              log_msg("PostInstall-AVG", "=== AVG Post-Install Sequence Starting ===")
+              desktop = Desktop(backend="uia")
+
+              avg_window = force_maximize_and_focus_target(desktop, avg_window, "avg", label="init")
+              time.sleep(0.5)
+
+              sw, sh = pyautogui.size()
+              cx, cy = sw // 2, sh // 2
+
+              log_msg("PostInstall-AVG", f"Double-clicking center screen ({cx}, {cy})...")
+              try:
+                  avg_window = force_maximize_and_focus_target(desktop, avg_window, "avg", label="pre-dblclick")
+                  pyautogui.click(cx, cy)
+                  time.sleep(0.15)
+                  pyautogui.click(cx, cy)
+                  log_msg("PostInstall-AVG", "Double-click executed.")
+              except Exception as e:
+                  log_msg("PostInstall-AVG", f"Double-click failed: {e}")
+
+              log_msg("PostInstall-AVG", "Waiting 5 seconds...")
+              for s in range(1, 6):
+                  if s % 2 == 0:
+                      avg_window = force_maximize_and_focus_target(desktop, avg_window, "avg", label=f"init-wait-{s}")
+                  time.sleep(1)
+
+              tab_count = 6
+              tab_ceiling = 17
+
+              while tab_count < tab_ceiling:
+                  log_msg("PostInstall-AVG", f"--- Cycle: {tab_count} TAB presses ---")
+
+                  avg_window = force_maximize_and_focus_target(desktop, avg_window, "avg", label=f"pre-CtrlT-{tab_count}")
+                  log_msg("PostInstall-AVG", f"Sending Ctrl+T for cycle TAB {tab_count}...")
+                  send_keys('^t')
+
+                  log_msg("PostInstall-AVG", f"Pressing TAB key {tab_count} times (1-2s delay each)...")
+                  for i in range(1, tab_count + 1):
+                      avg_window = force_maximize_and_focus_target(desktop, avg_window, "avg", label=f"TAB{tab_count}-press{i}")
+                      log_msg("PostInstall-AVG", f"  Sending TAB ({i}/{tab_count})...")
+                      send_keys('{TAB}')
+                      d = random.uniform(1.0, 2.0)
+                      time.sleep(d)
+
+                  avg_window = force_maximize_and_focus_target(desktop, avg_window, "avg", label=f"pre-ENTER-{tab_count}")
+                  log_msg("PostInstall-AVG", f"Sending ENTER after {tab_count} TABs...")
+                  send_keys('{ENTER}')
+
+                  step = random.randint(1, 2)
+                  log_msg("PostInstall-AVG", f"Next cycle increment: +{step}. Next tab_count: {tab_count + step}.")
+                  tab_count += step
+
+                  if tab_count < tab_ceiling:
+                      log_msg("PostInstall-AVG", "Waiting 5 seconds before next cycle...")
+                      for s in range(1, 6):
+                          if s % 2 == 0:
+                              avg_window = force_maximize_and_focus_target(desktop, avg_window, "avg", label=f"cycle-wait-{tab_count}-{s}")
+                          time.sleep(1)
+
+              log_msg("PostInstall-AVG", "=== AVG Post-Install Sequence Completed Successfully ===")
+
+          def handle_automation(software_type, action_mode, timeout=360):
+              desktop = Desktop(backend="uia")
+              start_time = time.time()
+              proxy_auth_time = start_time
+
+              log_msg("UI-Engine", f"Started monitoring. Action Mode: {action_mode.upper()} | "
+                      f"Type: {software_type} | ProxyType: {PROXY_TYPE} | UseProxy: {USE_PROXY}")
+              log_msg("UI-Engine", f"Proxy credentials ready: User={PROXY_USER[:25]}... | "
+                      f"Server={PROXY_SERVER}")
+
+              opera_download_clicked = False
+              avg_download_clicked = False
+              keep_sequence_pending = False
+              keep_backup_pending = False
+              keep_backup_time = 0
+              last_dl_click_time = 0
+
+              smart_link_interstitial_done = False
+              smart_link_interstitial_time = 0
+
+              opera_one_installer_executed_time = None
+              opera_one_post_install_done = False
+
+              opera_gx_installer_executed_time = None
+              opera_gx_post_install_done = False
+
+              avg_installer_executed_time = None
+              avg_post_install_done = False
+
+              sentinel_path = os.path.join(tempfile.gettempdir(), "download_done.flag")
+              download_windows_closed = False
+
+              installer_executed_sentinel = os.path.join(tempfile.gettempdir(), "installer_executed.flag")
+
+              last_interference_sweep = 0
+              INTERFERENCE_SWEEP_INTERVAL = 2
+
+              last_auth_inject_time = 0
+              AUTH_INJECT_COOLDOWN = 8
+
+              last_dl_multilingual_time = 0
+              DL_MULTILINGUAL_COOLDOWN = 5
+
+              while time.time() - start_time < timeout:
+                  try:
+                      desktop = Desktop(backend="uia")
+                      edge_window = None
+                      opera_window = None
+                      avg_window = None
+
+                      for window in desktop.windows(visible_only=True):
+                          wt = window.window_text()
+                          if not wt: continue
+                          if "Microsoft Edge" in wt or "sudetyj" in wt or "Chrome Web Store" in wt or "Edge" in wt:
+                              edge_window = window
+                          if "Opera" in wt or "Speed Dial" in wt or "Start Page" in wt or "Welcome" in wt:
+                              if "Microsoft Edge" not in wt and "Edge" not in wt and "Chrome Web Store" not in wt:
+                                  opera_window = window
+                          if "AVG" in wt:
+                              avg_window = window
+
+                      now = time.time()
+                      if now - last_interference_sweep >= INTERFERENCE_SWEEP_INTERVAL:
+                          dismiss_interference_windows(desktop, software_type, label="continuous")
+                          last_interference_sweep = now
+
+                      # ── UNIVERSAL MULTILINGUAL PROXY AUTH DETECTION ────────────
+                      if USE_PROXY and (now - last_auth_inject_time > AUTH_INJECT_COOLDOWN):
+                          try:
+                              for auth_window in desktop.windows(visible_only=True):
+                                  awt = auth_window.window_text() or ""
+                                  if "Microsoft Edge" in awt and awt != "Microsoft Edge":
+                                      continue
+                                  if _is_target_software_window(awt, software_type):
+                                      continue
+                                  if _is_proxy_auth_dialog(awt):
+                                      log_msg("ProxyAuth", f"[TopLevel] Auth dialog detected: '{awt}' "
+                                              f"— injecting {PROXY_TYPE} credentials...")
+                                      injected = inject_proxy_auth(auth_window, label=f"toplevel-{awt[:30]}")
+                                      if injected:
+                                          proxy_auth_time = time.time()
+                                          last_auth_inject_time = now
+                                          log_msg("ProxyAuth", f"[TopLevel] Credentials injected for '{awt}'.")
+                                          break
+                          except Exception as auth_ex:
+                              log_msg("ProxyAuth", f"Auth scan error: {auth_ex}")
+
+                          if edge_window and (now - last_auth_inject_time > AUTH_INJECT_COOLDOWN):
+                              try:
+                                  for child in edge_window.children():
+                                      cwt = child.window_text() or ""
+                                      if _is_proxy_auth_dialog(cwt):
+                                          log_msg("ProxyAuth", f"[EdgeChild] Embedded auth dialog: '{cwt}'")
+                                          injected = inject_proxy_auth(child, label=f"edge-child-{cwt[:20]}")
+                                          if injected:
+                                              proxy_auth_time = time.time()
+                                              last_auth_inject_time = now
+                                              break
+                              except Exception:
+                                  pass
+
+                          if edge_window and (now - last_auth_inject_time > AUTH_INJECT_COOLDOWN):
+                              try:
+                                  u_struct, p_struct = _is_auth_dialog_by_structure(edge_window)
+                                  if u_struct and p_struct:
+                                      if (not _is_address_bar_control(u_struct) and
+                                              not _is_address_bar_control(p_struct)):
+                                          log_msg("ProxyAuth", "[EdgeStructural] 2-field dialog found inside Edge — "
+                                                  "attempting structural credential injection.")
+                                          injected = inject_proxy_auth(edge_window, label="edge-structural")
+                                          if injected:
+                                              proxy_auth_time = time.time()
+                                              last_auth_inject_time = now
+                              except Exception:
+                                  pass
+
+                      if not download_windows_closed and os.path.exists(sentinel_path):
+                          log_msg("Sentinel", "Flag detected (EXE found). Initiating download window cleanup sequence...")
+                          for attempt in range(1, 8):
+                              still_open = close_download_windows(desktop, attempt_label=f"#{attempt}")
+                              time.sleep(2)
+                              if not still_open:
+                                  log_msg("Sentinel", f"Cleanup successful on attempt #{attempt}.")
+                                  break
+                          download_windows_closed = True
+                          edge_window = None
+
+                      if action_mode == "install" and not opera_one_post_install_done:
+                          is_one = (software_type == "opera_one")
+                          is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
+                          if is_one or is_dynamic:
+                              if opera_one_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
+                                  opera_one_installer_executed_time = time.time()
+                                  log_msg("PostInstall-OP1", f"Installer sentinel detected. Post-install sequence fires in 50s.")
+                              if opera_one_installer_executed_time is not None and (time.time() - opera_one_installer_executed_time) >= 50:
+                                  if is_dynamic and opera_window and "GX" in opera_window.window_text().upper():
+                                      log_msg("PostInstall-OP1", "Dynamic resolved to GX. Skipping One sequence.")
+                                      opera_one_post_install_done = True
+                                  else:
+                                      log_msg("PostInstall-OP1", "50s threshold reached. Launching Opera One post-install sequence.")
+                                      opera_one_post_install_sequence(opera_window, software_type=software_type)
+                                      opera_one_post_install_done = True
+
+                      if action_mode == "install" and not opera_gx_post_install_done:
+                          is_gx = (software_type == "opera_gx")
+                          is_dynamic = software_type in["ad_mvn", "dynamic_opera", "opera_smart_link"]
+                          if is_gx or is_dynamic:
+                              if opera_gx_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
+                                  opera_gx_installer_executed_time = time.time()
+                                  log_msg("PostInstall-OPGX", f"Sentinel detected. Post-install fires in 40s.")
+                              if opera_gx_installer_executed_time is not None and (time.time() - opera_gx_installer_executed_time) >= 40:
+                                  if is_dynamic and opera_window and "GX" not in opera_window.window_text().upper():
+                                      log_msg("PostInstall-OPGX", "Dynamic resolved to One. Skipping GX sequence.")
+                                      opera_gx_post_install_done = True
+                                  else:
+                                      log_msg("PostInstall-OPGX", "40s threshold reached. Launching Opera GX post-install.")
+                                      opera_gx_post_install_sequence(opera_window)
+                                      opera_gx_post_install_done = True
+
+                      if software_type == "avg" and action_mode == "install" and not avg_post_install_done:
+                          if avg_installer_executed_time is None and os.path.exists(installer_executed_sentinel):
+                              avg_installer_executed_time = time.time()
+                              log_msg("PostInstall-AVG", f"Sentinel detected. Post-install fires in 60s.")
+                          if avg_installer_executed_time is not None and (time.time() - avg_installer_executed_time) >= 60:
+                              log_msg("PostInstall-AVG", "60s threshold reached. Launching AVG post-install.")
+                              avg_post_install_sequence(avg_window)
+                              avg_post_install_done = True
+
+                      # ── MULTILINGUAL COOKIE CONSENT ────────────────────────────
+                      if edge_window:
+                          try:
+                              for btn in edge_window.descendants(control_type="Button"):
+                                  try:
+                                      btn_txt = (btn.window_text() or "").strip()
+                                  except Exception:
+                                      btn_txt = ""
+                                  if btn_txt and _matches_any(btn_txt, COOKIE_CONSENT_KEYWORDS):
+                                      try:
+                                          log_msg("Cookies", f"Found consent button: '{btn_txt}'. Clicking...")
+                                          btn.click_input()
+                                          time.sleep(1)
+                                          break
+                                      except Exception:
+                                          pass
+                          except Exception:
+                              pass
+
+                      if edge_window and software_type == "opera_smart_link":
+                          elapsed = time.time() - proxy_auth_time
+                          if not smart_link_interstitial_done:
+                              if elapsed > 20:
+                                  try:
+                                      log_msg("SmartLink", f"{elapsed:.1f}s elapsed. Executing TAB + ENTER interstitial bypass...")
+                                      edge_window.set_focus()
+                                      time.sleep(0.5)
+                                      send_keys('{TAB}')
+                                      time.sleep(0.5)
+                                      send_keys('{ENTER}')
+                                      log_msg("SmartLink", "TAB + ENTER injected. Waiting 15s.")
+                                  except Exception as e:
+                                      log_msg("SmartLink", f"Bypass failed: {e}")
+                                  smart_link_interstitial_done = True
+                                  smart_link_interstitial_time = time.time()
+
+                      if action_mode == "click":
+                          if software_type == "opera_smart_link":
+                              if not smart_link_interstitial_done:
+                                  time.sleep(1)
+                                  continue
+                              elif time.time() - smart_link_interstitial_time < 15:
+                                  time.sleep(1)
+                                  continue
+                          time.sleep(1)
+                          continue
+
+                      can_click_download = True
+                      if software_type == "opera_smart_link":
+                          if not smart_link_interstitial_done or (time.time() - smart_link_interstitial_time < 15):
+                              can_click_download = False
+
+                      # ── MULTILINGUAL DOWNLOAD BUTTON CLICK ─────────────────────
+                      if (edge_window and action_mode == "install" and can_click_download
+                              and software_type in["opera_gx", "opera_one", "ad_mvn",
+                                                    "dynamic_opera", "opera_smart_link"]):
+                          if not opera_download_clicked:
+                              if now - last_dl_multilingual_time > DL_MULTILINGUAL_COOLDOWN:
+                                  log_msg("DL-Engine", f"Opera download scan triggered (type={software_type})...")
+                                  clicked = click_download_button_multilingual(
+                                      edge_window, software_type, label=f"opera-dl-{software_type}"
+                                  )
+                                  if clicked:
+                                      last_dl_multilingual_time = now
+                                      last_dl_click_time = now
+                                      opera_download_clicked = True
+                                      keep_sequence_pending = True
+                                      log_msg("DL-Engine", "Opera download button clicked successfully (multilingual).")
+                                  else:
+                                      log_msg("DL-Engine", "Opera download button not found this cycle. Will retry.")
+
+                      if edge_window and action_mode == "install" and software_type == "avg":
+                          elapsed = time.time() - proxy_auth_time
+                          if not avg_download_clicked and elapsed > 20:
+                              log_msg("AVG", f"{elapsed:.1f}s elapsed. Initiating multilingual AVG download click.")
+                              clicked = click_download_button_multilingual(
+                                  edge_window, software_type, label="avg-dl-multilingual"
+                              )
+                              if clicked:
+                                  log_msg("AVG", "Multilingual AVG download button clicked successfully.")
+                              else:
+                                  log_msg("AVG", "Multilingual button not found — falling back to TAB+ENTER keyboard method.")
+                                  try:
+                                      edge_window.set_focus()
+                                      time.sleep(0.5)
+                                      send_keys('{TAB}')
+                                      delay = random.uniform(1.0, 2.0)
+                                      time.sleep(delay)
+                                      send_keys('{ENTER}')
+                                      log_msg("AVG", "TAB+ENTER fallback sent.")
+                                  except Exception as e:
+                                      log_msg("AVG", f"Keyboard sequence error: {e}")
+                              avg_download_clicked = True
+                              last_dl_click_time = time.time()
+                              keep_sequence_pending = True
+
+                      # ── STATE MACHINE: KEEP SEQUENCE ───────────────────────────
+                      if keep_sequence_pending and (now - last_dl_click_time >= 15):
+                          keep_sequence_pending = False
+                          log_msg("KeepSeq", "15 seconds elapsed since download click. Executing robust Ctrl+J -> Tab x4 -> Enter sequence.")
+                          try:
+                              edge_window.set_focus()
+                              time.sleep(0.5)
+                              log_msg("KeepSeq", "Sending Ctrl+J...")
+                              send_keys('^j')
+                              time.sleep(1)
+                              for t_idx in range(1, 5):
+                                  log_msg("KeepSeq", f"Sending TAB {t_idx}/4...")
+                                  send_keys('{TAB}')
+                                  time.sleep(1)
+                              log_msg("KeepSeq", "Sending ENTER...")
+                              send_keys('{ENTER}')
+                              log_msg("KeepSeq", "Keep keyboard sequence complete.")
+                          except Exception as e:
+                              log_msg("KeepSeq", f"Error in Keep keyboard sequence: {e}")
+                          
+                          keep_backup_pending = True
+                          keep_backup_time = time.time()
+
+                      if keep_backup_pending and (now - keep_backup_time >= 5):
+                          keep_backup_pending = False
+                          if not os.path.exists(sentinel_path):
+                              log_msg("KeepSeq", "Software not downloaded yet. Executing backup UI automation click for Keep...")
+                              try:
+                                  edge_window.set_focus()
+                                  time.sleep(0.5)
+                                  click_keep_button_multilingual(edge_window, label="keep-backup")
+                                  
+                                  # Absolute coordinate backup for keep in Edge flyout
+                                  sw_now, sh_now = pyautogui.size()
+                                  cx = sw_now - 220
+                                  cy = 175
+                                  log_msg("KeepSeq", f"Absolute fallback mouse click at ({cx}, {cy}) for Keep.")
+                                  pyautogui.moveTo(cx, cy, duration=0.2)
+                                  pyautogui.click()
+                              except Exception as e:
+                                  log_msg("KeepSeq", f"Backup Keep click error: {e}")
+                          else:
+                              log_msg("KeepSeq", "Software already downloaded. Skipping Keep UI backup.")
+
+                      if edge_window and action_mode == "install":
+                          add_ext_btns = edge_window.descendants(control_type="Button", title="Add extension")
+                          if add_ext_btns:
+                              try:
+                                  edge_window.set_focus()
+                                  time.sleep(0.5)
+                                  add_ext_btns[0].click_input()
+                                  log_msg("Extension", "Clicked 'Add extension'. Waiting 2s...")
+                                  time.sleep(2)
+                              except Exception as e:
+                                  log_msg("Extension", f"Failed to click 'Add extension': {e}")
+                          else:
+                              for btn_name in["Add to Chrome", "Get"]:
+                                  install_btns = edge_window.descendants(control_type="Button", title=btn_name)
+                                  if install_btns:
+                                      try:
+                                          edge_window.set_focus()
+                                          time.sleep(0.5)
+                                          install_btns[0].click_input()
+                                          log_msg("Extension", f"Clicked '{btn_name}'. Waiting 2s...")
+                                          time.sleep(2)
+                                          break
+                                      except Exception as e:
+                                          log_msg("Extension", f"Failed to click '{btn_name}': {e}")
+
+                  except Exception as e:
+                      pass
+                  time.sleep(1)
+
+          if __name__ == "__main__":
+              software_type = sys.argv[1] if len(sys.argv) > 1 else "avg"
+              action_mode   = sys.argv[2] if len(sys.argv) > 2 else "install"
+              handle_automation(software_type, action_mode)
+          '@
+          $handlerPy | Out-File -FilePath "$env:TEMP\auto_handler.py" -Encoding utf8
+
+          Write-Host "[UI-Engine] Spinning up background Python process..." -ForegroundColor DarkGray
+          Start-Process -FilePath "python" `
+              -ArgumentList "-u `"$env:TEMP\auto_handler.py`" `"$env:SOFTWARE_TYPE`" `"$env:ACTION_MODE`"" `
+              -WindowStyle Hidden
+
+          $dlFolder    = "$env:USERPROFILE\Downloads"
+          $timeoutSecs = 330
+          $softwareType = $env:SOFTWARE_TYPE
+          $exeFilter   = $env:EXE_FILTER
+          $sentinelPath = "$env:TEMP\download_done.flag"
+          $installerExecutedSentinel = "$env:TEMP\installer_executed.flag"
+
+          if ($env:ACTION_MODE -eq "install") {
+              Write-Host "[Watcher] Action mode is INSTALL. Initializing download directory monitor..." -ForegroundColor Cyan
+              $installJob = Start-Job -ScriptBlock {
+                  param($dlFolder, $timeoutSecs, $softwareType, $exeFilter, $sentinelPath, $installerExecutedSentinel)
+                  $deadline  = (Get-Date).AddSeconds($timeoutSecs)
+                  $installed = $false
+
+                  Write-Output "[$($softwareType.ToUpper())-WATCHER] Tracking directory: $dlFolder"
+                  Write-Output "[$($softwareType.ToUpper())-WATCHER] Awaiting file matching: $exeFilter"
+
+                  while (-not $installed -and (Get-Date) -lt $deadline) {
+                      $candidates = Get-ChildItem -Path $dlFolder -Filter $exeFilter -ErrorAction SilentlyContinue |
+                          Where-Object { $_.Name -notmatch '\.(crdownload|part|tmp)$' } |
+                          Sort-Object LastWriteTime -Descending
+
+                      if ($candidates.Count -gt 0) {
+                          $file = $candidates[0]
+                          Write-Output "[$($softwareType.ToUpper())-WATCHER] SUCCESS: Payload binary found -> $($file.Name)"
+
+                          try { Set-Content -Path $sentinelPath -Value "done" -ErrorAction SilentlyContinue } catch {}
+                          Write-Output "[$($softwareType.ToUpper())-WATCHER] Sentinel flag generated."
+
+                          Write-Output "[$($softwareType.ToUpper())-WATCHER] Aggressively closing Edge download tabs..."
+                          for ($closeAttempt = 1; $closeAttempt -le 4; $closeAttempt++) {
+                              try {
+                                  $wsh = New-Object -ComObject WScript.Shell
+                                  $edgeProcs = Get-Process -Name "msedge" -ErrorAction SilentlyContinue |
+                                      Where-Object { $_.MainWindowHandle -ne 0 } |
+                                      Sort-Object StartTime -Descending
+
+                                  if ($edgeProcs) {
+                                      foreach ($edgeProc in $edgeProcs) {
+                                          Write-Output "[$($softwareType.ToUpper())-WATCHER] Close attempt $closeAttempt — focusing Edge PID $($edgeProc.Id)..."
+                                          $wsh.AppActivate($edgeProc.Id)
+                                          Start-Sleep -Milliseconds 600
+                                          $wsh.SendKeys("^w")
+                                          Start-Sleep -Milliseconds 400
+                                          $wsh.SendKeys("^w")
+                                          Start-Sleep -Milliseconds 400
+                                          Write-Output "[$($softwareType.ToUpper())-WATCHER] Ctrl+W x2 sent to Edge PID $($edgeProc.Id)."
+                                      }
+                                  } else {
+                                      Write-Output "[$($softwareType.ToUpper())-WATCHER] No visible Edge window — blind Ctrl+W attempt $closeAttempt..."
+                                      $wsh.SendKeys("^w")
+                                      Start-Sleep -Milliseconds 500
+                                      $wsh.SendKeys("^w")
+                                  }
+
+                                  Start-Sleep -Milliseconds 800
+                                  $remaining = Get-Process -Name "msedge" -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 }
+                                  if (-not $remaining) {
+                                      Write-Output "[$($softwareType.ToUpper())-WATCHER] Edge fully closed on attempt $closeAttempt."
+                                      break
+                                  } else {
+                                      Write-Output "[$($softwareType.ToUpper())-WATCHER] Edge still has windows. Retrying (attempt $closeAttempt)..."
+                                  }
+                              } catch {
+                                  Write-Output "[$($softwareType.ToUpper())-WATCHER] Close attempt $closeAttempt failed: $_"
+                              }
+                              Start-Sleep -Milliseconds 500
+                          }
+
+                          $actualSoftware = $softwareType
+                          if ($softwareType -eq "ad_mvn" -or $softwareType -eq "dynamic_opera" -or $softwareType -eq "opera_smart_link") {
+                              if ($file.Name -match "OperaGX") {
+                                  $actualSoftware = "opera_gx"
+                                  Write-Output "[$($softwareType.ToUpper())-WATCHER] Payload fingerprinted as Opera GX Setup."
+                              } else {
+                                  $actualSoftware = "opera_one"
+                                  Write-Output "[$($softwareType.ToUpper())-WATCHER] Payload fingerprinted as Opera One Standard Setup."
+                              }
+                          }
+
+                          Write-Output "[$($actualSoftware.ToUpper())-INSTALL] Verifying file I/O lock status..."
+                          $locked = $true
+                          while ($locked) {
+                              Start-Sleep -Seconds 2
+                              try {
+                                  $s = [System.IO.File]::Open($file.FullName, 'Open', 'Read', 'None')
+                                  $s.Close()
+                                  $locked = $false
+                                  Write-Output "[$($actualSoftware.ToUpper())-INSTALL] File unlocked and ready."
+                              } catch { }
+                          }
+
+                          Write-Output "[$($actualSoftware.ToUpper())-INSTALL] Writing installer-executed sentinel flag..."
+                          try { Set-Content -Path $installerExecutedSentinel -Value "done" -ErrorAction SilentlyContinue } catch {}
+                          Write-Output "[$($actualSoftware.ToUpper())-INSTALL] Sentinel written: $installerExecutedSentinel"
+
+                          Write-Output "[$($actualSoftware.ToUpper())-INSTALL] Executing silent payload installer -> $($file.FullName) /silent"
+                          try {
+                              Start-Process -FilePath $file.FullName -ArgumentList "/silent" -Wait
+                              Write-Output "[$($actualSoftware.ToUpper())-INSTALL] Binary deployed successfully."
+                          } catch {
+                              Write-Output "[$($actualSoftware.ToUpper())-INSTALL] EXCEPTION ERROR running installer: $_"
+                          }
+
+                          Write-Output "[$($actualSoftware.ToUpper())-POST] Scanning deployment directories for executable..."
+                          if ($actualSoftware -eq "opera_gx") {
+                              $appPaths = @(
+                                  "$env:LOCALAPPDATA\Programs\Opera GX\launcher.exe",
+                                  "$env:LOCALAPPDATA\Programs\Opera GX\opera.exe",
+                                  "C:\Program Files\Opera GX\launcher.exe",
+                                  "C:\Program Files\Opera GX\opera.exe",
+                                  "C:\Program Files (x86)\Opera GX\launcher.exe",
+                                  "C:\Program Files (x86)\Opera GX\opera.exe"
+                              )
+                          } elseif ($actualSoftware -eq "opera_one") {
+                              $appPaths = @(
+                                  "$env:LOCALAPPDATA\Programs\Opera\launcher.exe",
+                                  "$env:LOCALAPPDATA\Programs\Opera\opera.exe",
+                                  "C:\Program Files\Opera\launcher.exe",
+                                  "C:\Program Files\Opera\opera.exe",
+                                  "C:\Program Files (x86)\Opera\launcher.exe",
+                                  "C:\Program Files (x86)\Opera\opera.exe"
+                              )
+                          } else {
+                              $appPaths = @(
+                                  "C:\Program Files\AVG\Browser\Application\AVGBrowser.exe",
+                                  "C:\Program Files (x86)\AVG\Browser\Application\AVGBrowser.exe",
+                                  "C:\Program Files\AVG\Antivirus\AVGUI.exe",
+                                  "C:\Program Files (x86)\AVG\Antivirus\AVGUI.exe"
+                              )
+                          }
+
+                          $launched = $false
+                          for ($i = 0; $i -lt 300; $i++) {
+                              foreach ($p in $appPaths) {
+                                  if (Test-Path $p) {
+                                      Start-Sleep -Seconds 3
+                                      Write-Output "[$($actualSoftware.ToUpper())-POST] Spawning process: $p"
+                                      Start-Process -FilePath $p
+                                      $launched = $true
+                                      break
+                                  }
+                              }
+                              if ($launched) { break }
+                              Start-Sleep -Seconds 2
+                          }
+
+                          if (-not $launched) {
+                              Write-Output "[$($actualSoftware.ToUpper())-POST] FATAL: Executable was not found within timeout."
+                          }
+
+                          $installed = $true
+                      } else {
+                          Start-Sleep -Seconds 5
+                      }
+                  }
+                  if (-not $installed) { Write-Output "[$($softwareType.ToUpper())-WATCHER] Timeout reached. No files matching pattern downloaded." }
+              } -ArgumentList $dlFolder, $timeoutSecs, $softwareType, $exeFilter, $sentinelPath, $installerExecutedSentinel
+          }
+
+          $edgeExe = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+          if (-Not (Test-Path $edgeExe)) {
+              $edgeExe = "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+          }
+
+          # ── Build locale-aware Edge accept-language header ────────────────────
+          $localeTag = $env:WINDOWS_LOCALE
+          if (-not $localeTag) { $localeTag = "en-US" }
+          $langCode = $localeTag.ToLower()
+          $langPrimary = $langCode.Split("-")[0]
+          $acceptLang = "$langCode,$langPrimary;q=0.9,en;q=0.8"
+
+          $edgeArgs = @(
+              "--no-first-run",
+              "--no-default-browser-check",
+              "--disable-sync",
+              "--safebrowsing-disable-download-protection",
+              "--disable-features=msSmartScreenProtection,SmartScreenPuaEnabled",
+              "--lang=$langCode",
+              "--accept-lang=$acceptLang"
+          )
+
+          if ($useProxy) {
+              $edgeArgs += "--proxy-server=`"http://$proxyServer`""
+          }
+          $edgeArgs += "`"$env:TARGET_URL`""
+
+          Write-Host "[System] Launching Edge with locale: $langCode | Accept-Language: $acceptLang" -ForegroundColor DarkCyan
+          Write-Host "[System] Launching Edge browser context..." -ForegroundColor Cyan
+          Write-Host "[System] Command: msedge.exe $(($edgeArgs | ForEach-Object { $_ -replace '"','\"' }) -join ' ')" -ForegroundColor DarkGray
+          Start-Process -FilePath $edgeExe -ArgumentList ($edgeArgs -join " ")
+
+          Write-Host "========== RUNTIME EXECUTION ==========" -ForegroundColor Cyan
+
+          if ($env:ACTION_MODE -eq "install") {
+              Write-Host "[Runtime] Operating in INSTALL pathway. Monitoring watcher job..." -ForegroundColor Cyan
+              $deadline = (Get-Date).AddSeconds($timeoutSecs)
+              while ($true) {
+                  $output = Receive-Job -Job $installJob -ErrorAction SilentlyContinue
+                  if ($output) { foreach ($line in $output) { Write-Host $line } }
+                  if ($installJob.State -eq 'Completed' -or $installJob.State -eq 'Failed' -or (Get-Date) -gt $deadline) { break }
+                  Start-Sleep -Seconds 5
+              }
+              Write-Host "[Runtime] Install job concluded. Task complete." -ForegroundColor Green
+
+          } else {
+              Write-Host "[Runtime] Operating in CLICK-ONLY pathway. All binaries and installations are bypassed." -ForegroundColor Magenta
+
+              if ($env:SOFTWARE_TYPE -eq "opera_smart_link") {
+                  Write-Host "[Runtime] Allowing 75 seconds for TAB/ENTER interstitial page routing..." -ForegroundColor Yellow
+              } else {
+                  Write-Host "[Runtime] Allowing 75 seconds to ensure webpage fully loads..." -ForegroundColor Yellow
+              }
+
+              $clickStart      = Get-Date
+              $clickTotal      = 75
+              $step            = 15
+              $reloadFired     = $false
+              $reloadThreshold = Get-Random -Minimum 20 -Maximum 61
+              $reloadChance    = Get-Random -Minimum 10 -Maximum 101
+
+              Write-Host "[$env:SOFTWARE_TYPE] Click session started. Reload threshold: ${reloadThreshold}s | Reload chance: ${reloadChance}%" -ForegroundColor DarkGray
+
+              for ($w = 0; $w -lt $clickTotal; $w += $step) {
+                  Write-Host "[$env:SOFTWARE_TYPE] Click tracker: $w / $clickTotal seconds elapsed..." -ForegroundColor Yellow
+
+                  if (-not $reloadFired) {
+                      $elapsed = [int]((Get-Date) - $clickStart).TotalSeconds
+                      if ($elapsed -ge $reloadThreshold) {
+                          Write-Host "[$env:SOFTWARE_TYPE] Reload threshold reached at ${elapsed}s. Executing page reload..." -ForegroundColor Cyan
+                          try {
+                              Add-Type -AssemblyName UIAutomationClient
+                              $wsh = New-Object -ComObject WScript.Shell
+                              $wsh.SendKeys('{F5}')
+                              Write-Host "[$env:SOFTWARE_TYPE] F5 (page reload) sent successfully." -ForegroundColor Green
+                          } catch {
+                              Write-Host "[$env:SOFTWARE_TYPE] F5 reload attempt failed: $_" -ForegroundColor Red
+                          }
+                          $reloadFired = $true
+                      }
+                  }
+
+                  Start-Sleep -Seconds $step
+              }
+
+              Write-Host "[Runtime] Click tracking wait complete (75s elapsed). All click-path tasks finished." -ForegroundColor Green
+              Write-Host "[Runtime] Click pathway exiting cleanly." -ForegroundColor Magenta
+              exit 0
+          }
+
+      - name: Keep Runner Alive
+        if: always() && matrix.action_mode == 'install'
+        shell: pwsh
+        run: |
+          Write-Host "Session lifecycle fully executed." -ForegroundColor Green
+          Write-Host "Leaving runner online to exhaust remaining job timeout margin..." -ForegroundColor DarkGray
+          Start-Sleep -Seconds 360
+
+  next_cycle:
+    name: Trigger Next Cycle
+    needs: [prepare_matrix, remote_session]
+    if: always() && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Next Run
+        env:
+          CURRENT_CYCLE: ${{ inputs.current_cycle }}
+          NUM_CYCLES: ${{ inputs.num_run_cycles }}
+          WAIT_PERIOD: ${{ inputs.wait_period }}
+        run: |
+          if[ -z "${{ secrets.GH_PAT }}" ]; then
+            export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          else
+            export GH_TOKEN="${{ secrets.GH_PAT }}"
+          fi
+          
+          current=${CURRENT_CYCLE}
+          max_cycles=${NUM_CYCLES}
+          wait_time=${WAIT_PERIOD}
+          
+          if[ "$current" -lt "$max_cycles" ]; then
+            next_cycle=$((current + 1))
+            echo "=========================================================="
+            echo "Cycle $current of $max_cycles completed."
+            echo "Waiting for $wait_time minutes before triggering cycle $next_cycle..."
+            echo "=========================================================="
+            sleep $((wait_time * 60))
+            
+            echo "Triggering next cycle ($next_cycle)..."
+            gh workflow run "${{ github.workflow }}" \
+              -f os_version="${{ inputs.os_version }}" \
+              -f getscreen_email="${{ inputs.getscreen_email }}" \
+              -f num_devices="${{ inputs.num_devices }}" \
+              -f num_installs="${{ inputs.num_installs }}" \
+              -f num_clicks="${{ inputs.num_clicks }}" \
+              -f num_run_cycles="${{ inputs.num_run_cycles }}" \
+              -f wait_period="${{ inputs.wait_period }}" \
+              -f software_choice="${{ inputs.software_choice }}" \
+              -f manual_software_url="${{ inputs.manual_software_url }}" \
+              -f run_manual_link="${{ inputs.run_manual_link }}" \
+              -f scrapeops_api_key="${{ inputs.scrapeops_api_key }}" \
+              -f use_without_proxy="${{ inputs.use_without_proxy }}" \
+              -f proxy_country="${{ inputs.proxy_country }}" \
+              -f mobile_proxies="${{ inputs.mobile_proxies }}" \
+              -f sticky_sessions="${{ inputs.sticky_sessions }}" \
+              -f current_cycle="$next_cycle" \
+              --ref "${{ github.ref }}"
+              
+            echo "Success! Next cycle deployed into queue."
+          else
+            echo "=========================================================="
+            echo "All $max_cycles run cycles completed successfully!"
+            echo "=========================================================="
+          fi
