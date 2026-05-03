@@ -186,7 +186,7 @@ jobs:
               with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                   f.write("has_tasks=true\n")
 
-          action_list = ["install"] * num_installs + ["click"] * num_clicks
+          action_list = ["install"] * num_installs +["click"] * num_clicks
           random.shuffle(action_list)
 
           print(f"[Action Matrix] Total Tasks Queued: {tasks_total}")
@@ -457,7 +457,7 @@ jobs:
 
           # Parse inputs into lists
           manual_proxies =[]
-          scrapeops_keys = []
+          scrapeops_keys =[]
           floppy_keys =[]
           
           if proxy_input and not without_proxy:
@@ -2239,6 +2239,18 @@ jobs:
                               try:
                                   edge_window.set_focus()
                                   time.sleep(0.5)
+                                  
+                                  # --- Added Center Screen Clicks ---
+                                  sw, sh = pyautogui.size()
+                                  cx, cy = sw // 2, sh // 2
+                                  log_msg("DL-Engine", f"Clicking center screen ({cx}, {cy}) 2 times...")
+                                  pyautogui.moveTo(cx, cy, duration=0.2)
+                                  pyautogui.click()
+                                  time.sleep(1)
+                                  pyautogui.click()
+                                  time.sleep(1)
+                                  # ----------------------------------
+
                                   for i in range(1, DOWNLOAD_TABS + 1):
                                       send_keys('{TAB}')
                                       log_msg("DL-Engine", f"TAB {i}/{DOWNLOAD_TABS} sent.")
@@ -2260,6 +2272,18 @@ jobs:
                               try:
                                   edge_window.set_focus()
                                   time.sleep(0.5)
+                                  
+                                  # --- Added Center Screen Clicks ---
+                                  sw, sh = pyautogui.size()
+                                  cx, cy = sw // 2, sh // 2
+                                  log_msg("AVG", f"Clicking center screen ({cx}, {cy}) 2 times...")
+                                  pyautogui.moveTo(cx, cy, duration=0.2)
+                                  pyautogui.click()
+                                  time.sleep(1)
+                                  pyautogui.click()
+                                  time.sleep(1)
+                                  # ----------------------------------
+
                                   for i in range(1, DOWNLOAD_TABS + 1):
                                       send_keys('{TAB}')
                                       log_msg("AVG", f"TAB {i}/{DOWNLOAD_TABS} sent.")
@@ -2561,7 +2585,7 @@ jobs:
                   Write-Host "[$env:SOFTWARE_TYPE] Click tracker: $w / $clickTotal seconds elapsed..." -ForegroundColor Yellow
 
                   if (-not $reloadFired) {
-                      $elapsed = [int]((Get-Date) - $clickStart).TotalSeconds
+                      $elapsed =[int]((Get-Date) - $clickStart).TotalSeconds
                       if ($elapsed -ge $reloadThreshold) {
                           Write-Host "[$env:SOFTWARE_TYPE] Reload threshold reached at ${elapsed}s. Executing page reload..." -ForegroundColor Cyan
                           try {
