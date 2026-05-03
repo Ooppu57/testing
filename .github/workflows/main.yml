@@ -68,6 +68,22 @@ on:
           - 'Ad-MVN - Orderflowz'
           - 'Ad-MVN - A2Z'
         default: 'Opera - Fatradez'
+      download_tab_presses:
+        description: 'Number of Tab Presses for Download Button'
+        required: true
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '5'
+          - '6'
+          - '7'
+          - '8'
+          - '9'
+          - '10'
+        default: '3'
       manual_software_url:
         description: 'Manual Software URL'
         required: false
@@ -774,6 +790,7 @@ jobs:
           SOFTWARE_TYPE: ${{ matrix.software_type }}
           EXE_FILTER: ${{ matrix.exe_filter }}
           ACTION_MODE: ${{ matrix.action_mode }}
+          DOWNLOAD_TAB_PRESSES: ${{ inputs.download_tab_presses }}
         run: |
           $useProxy    = $env:USE_PROXY -eq "true"
           $proxyType   = $env:PROXY_TYPE
@@ -786,6 +803,7 @@ jobs:
           Write-Host " Target URL: $env:TARGET_URL" -ForegroundColor Gray
           Write-Host " Category  : $env:SOFTWARE_TYPE" -ForegroundColor Cyan
           Write-Host " Action    : $($env:ACTION_MODE.ToUpper()) PATHWAY ASSIGNED" -ForegroundColor Magenta
+          Write-Host " DL Tabs   : $env:DOWNLOAD_TAB_PRESSES" -ForegroundColor Cyan
           Write-Host " Locale    : $env:WINDOWS_LOCALE | Country: $env:PROXY_COUNTRY_CODE | TZ: $env:TIMEZONE_WINDOWS" -ForegroundColor DarkCyan
 
           if ($useProxy) {
@@ -800,18 +818,19 @@ jobs:
           python -m pip install pywinauto pyautogui pygetwindow keyboard --quiet
 
           # ══════════════════════════════════════════════════════════════════════
-          # Write proxy credentials to a temp file so Python reads them safely
+          # Write proxy credentials and inputs to a temp file so Python reads them safely
           # ══════════════════════════════════════════════════════════════════════
           $credFile = "$env:TEMP\proxy_creds.json"
           $credObj  = @{
-              proxy_user   = $proxyUser
-              proxy_pass   = $proxyPass
-              proxy_server = $proxyServer
-              proxy_type   = $proxyType
-              use_proxy    = $useProxy
+              proxy_user    = $proxyUser
+              proxy_pass    = $proxyPass
+              proxy_server  = $proxyServer
+              proxy_type    = $proxyType
+              use_proxy     = $useProxy
+              download_tabs = [int]$env:DOWNLOAD_TAB_PRESSES
           }
           $credObj | ConvertTo-Json -Depth 2 | Out-File -FilePath $credFile -Encoding utf8
-          Write-Host "[Proxy] Credentials written to secure temp file: $credFile" -ForegroundColor DarkGray
+          Write-Host "[Proxy] Settings and Inputs written to secure temp file: $credFile" -ForegroundColor DarkGray
 
           $handlerPy = @'
           import time, sys, subprocess, random, os, tempfile, ctypes, json
@@ -823,7 +842,7 @@ jobs:
               t = time.strftime('%H:%M:%S')
               print(f"[{t}][{tag}] {msg}", flush=True)
 
-          # ── Load proxy credentials from the JSON file written by PowerShell ──
+          # ── Load inputs & proxy credentials from the JSON file written by PowerShell ──
           _CRED_FILE = os.path.join(tempfile.gettempdir(), "proxy_creds.json")
           _CREDS = {}
           try:
@@ -840,6 +859,7 @@ jobs:
           PROXY_SERVER = _CREDS.get("proxy_server", "")
           PROXY_TYPE   = _CREDS.get("proxy_type",   "none")
           USE_PROXY    = str(_CREDS.get("use_proxy", False)).lower() in ("true", "1", "yes")
+          DOWNLOAD_TABS = int(_CREDS.get("download_tabs", 3))
 
           DOWNLOAD_DONE_TITLES =[
               "Thanks for downloading Opera", "Thanks for downloadin",
@@ -1165,7 +1185,7 @@ jobs:
               tl = text.lower()
               if software_type == "avg":
                   return "avg" in tl
-              elif software_type in ["opera_gx"]:
+              elif software_type in["opera_gx"]:
                   return ("opera" in tl and "gx" in tl) or "opera gx" in tl
               elif software_type in["opera_one", "opera_smart_link", "dynamic_opera", "ad_mvn"]:
                   return "opera" in tl and "edge" not in tl and "chrome web store" not in tl
@@ -2001,7 +2021,7 @@ jobs:
               proxy_auth_time = start_time
 
               log_msg("UI-Engine", f"Started monitoring. Action Mode: {action_mode.upper()} | "
-                      f"Type: {software_type} | ProxyType: {PROXY_TYPE} | UseProxy: {USE_PROXY}")
+                      f"Type: {software_type} | ProxyType: {PROXY_TYPE} | UseProxy: {USE_PROXY} | DL Tabs: {DOWNLOAD_TABS}")
               log_msg("UI-Engine", f"Proxy credentials ready: User={PROXY_USER[:25]}... | "
                       f"Server={PROXY_SERVER}")
 
@@ -2215,13 +2235,13 @@ jobs:
                                                     "dynamic_opera", "opera_smart_link"]):
                           elapsed = time.time() - proxy_auth_time
                           if not opera_download_clicked and elapsed > 40:
-                              log_msg("DL-Engine", f"{elapsed:.1f}s elapsed. Executing keyboard download bypass for {software_type} (TABx3 + ENTER)...")
+                              log_msg("DL-Engine", f"{elapsed:.1f}s elapsed. Executing keyboard download bypass for {software_type} (TABx{DOWNLOAD_TABS} + ENTER)...")
                               try:
                                   edge_window.set_focus()
                                   time.sleep(0.5)
-                                  for i in range(1, 4):
+                                  for i in range(1, DOWNLOAD_TABS + 1):
                                       send_keys('{TAB}')
-                                      log_msg("DL-Engine", f"TAB {i}/3 sent.")
+                                      log_msg("DL-Engine", f"TAB {i}/{DOWNLOAD_TABS} sent.")
                                       time.sleep(1)
                                   send_keys('{ENTER}')
                                   log_msg("DL-Engine", "ENTER sent for Opera download.")
@@ -2236,14 +2256,16 @@ jobs:
                       if edge_window and action_mode == "install" and software_type == "avg":
                           elapsed = time.time() - proxy_auth_time
                           if not avg_download_clicked and elapsed > 40:
-                              log_msg("AVG", f"{elapsed:.1f}s elapsed. Initiating AVG TAB+ENTER download trigger.")
+                              log_msg("AVG", f"{elapsed:.1f}s elapsed. Initiating AVG TABx{DOWNLOAD_TABS} + ENTER download trigger.")
                               try:
                                   edge_window.set_focus()
                                   time.sleep(0.5)
-                                  send_keys('{TAB}')
-                                  time.sleep(1)
+                                  for i in range(1, DOWNLOAD_TABS + 1):
+                                      send_keys('{TAB}')
+                                      log_msg("AVG", f"TAB {i}/{DOWNLOAD_TABS} sent.")
+                                      time.sleep(1)
                                   send_keys('{ENTER}')
-                                  log_msg("AVG", "TAB+ENTER sent. Waiting for download...")
+                                  log_msg("AVG", "ENTER sent for download.")
                               except Exception as e:
                                   log_msg("AVG", f"Keyboard sequence error: {e}")
                               
