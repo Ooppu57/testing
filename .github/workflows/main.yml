@@ -1,4 +1,4 @@
-name: Parallel Windows Auto-Installer m
+name: Parallel Windows Auto-Installer
 
 on:
   workflow_dispatch:
@@ -2242,9 +2242,9 @@ jobs:
                                   
                                   # --- Added Offset Screen Clicks ---
                                   sw, sh = pyautogui.size()
-                                  cx = int(sw * 0.6) # 10% to the right of center
-                                  cy = int(sh * 0.6) # 10% below center
-                                  log_msg("DL-Engine", f"Clicking slightly below/right of center ({cx}, {cy}) 2 times...")
+                                  cx = int(sw * 0.5) # center horizontally
+                                  cy = int(sh * 0.25) # 25% above center
+                                  log_msg("DL-Engine", f"Clicking 25% above center ({cx}, {cy}) 2 times...")
                                   pyautogui.moveTo(cx, cy, duration=0.2)
                                   pyautogui.click()
                                   time.sleep(1)
@@ -2276,9 +2276,9 @@ jobs:
                                   
                                   # --- Added Offset Screen Clicks ---
                                   sw, sh = pyautogui.size()
-                                  cx = int(sw * 0.6) # 10% to the right of center
-                                  cy = int(sh * 0.6) # 10% below center
-                                  log_msg("AVG", f"Clicking slightly below/right of center ({cx}, {cy}) 2 times...")
+                                  cx = int(sw * 0.5) # center horizontally
+                                  cy = int(sh * 0.25) # 25% above center
+                                  log_msg("AVG", f"Clicking 25% above center ({cx}, {cy}) 2 times...")
                                   pyautogui.moveTo(cx, cy, duration=0.2)
                                   pyautogui.click()
                                   time.sleep(1)
