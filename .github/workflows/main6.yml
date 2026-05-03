@@ -1,4 +1,4 @@
-name: Parallel Windows Auto-Installer
+name: Parallel Windows Auto-Installer m6
 
 on:
   workflow_dispatch:
